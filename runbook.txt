@@ -1,0 +1,583 @@
+================================================================================
+           BUDGET & TODO TRACKER — MAINTAINER'S RUNBOOK
+================================================================================
+Last updated: March 2, 2026
+
+This runbook is for anyone who needs to set up the app in a new GitHub account
+or repository, run it locally, or make common customization changes (colors,
+fonts, icons, currency, etc.).
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+
+  A. Prerequisites
+  B. Setting Up in a New GitHub Account / Repository
+  C. Running Locally
+  D. Build & Manual Deploy
+  E. Common Customizations
+     E1.  Change Colors (Theme)
+     E2.  Change Font Family
+     E3.  Change Font Sizes
+     E4.  Change Icons
+     E5.  Change Currency
+     E6.  Change Date/Time Format
+     E7.  Change App Name & Branding
+     E8.  Change Summary Card Colors
+     E9.  Change Row Highlight Colors
+     E10. Change Toast Durations
+     E11. Change Snooze Options
+     E12. Add/Remove Preset Alarm Tones
+     E13. Change Custom Upload Size Limit
+  F. Folder & File Reference
+  G. Troubleshooting
+
+================================================================================
+A. PREREQUISITES
+================================================================================
+
+Ensure the following are installed on your machine:
+
+  1. Node.js 18+ (recommended: 20 LTS)
+     Download: https://nodejs.org/
+     Verify:   node --version
+
+  2. npm (comes with Node.js)
+     Verify:   npm --version
+
+  3. Git
+     Download: https://git-scm.com/
+     Verify:   git --version
+
+  4. A GitHub account (for deployment to GitHub Pages)
+
+================================================================================
+B. SETTING UP IN A NEW GITHUB ACCOUNT / REPOSITORY
+================================================================================
+
+Follow these steps exactly to deploy the app under a different GitHub account
+or repository name.
+
+STEP 1 — Create a new GitHub repository
+  • Go to https://github.com/new
+  • Name it whatever you like (e.g., "my-budget-app")
+  • Set to Public (GitHub Pages requires public for free accounts)
+  • Do NOT initialize with README, .gitignore, or license
+
+STEP 2 — Clone or copy the source code
+  Option A — Fork the original repo:
+    Go to https://github.com/shi453/budget-todo → click "Fork"
+
+  Option B — Fresh clone and re-point:
+    git clone https://github.com/shi453/budget-todo.git my-budget-app
+    cd my-budget-app
+    git remote set-url origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
+
+  Option C — Copy files manually:
+    Download the source as ZIP, extract, then:
+    cd my-budget-app
+    git init
+    git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
+
+STEP 3 — Update the base path (CRITICAL)
+  The app is currently configured to serve from /budget-todo/. You MUST change
+  this to match your new repository name.
+
+  If your repo is named "my-budget-app", replace "/budget-todo/" with
+  "/my-budget-app/" in ALL of these files:
+
+  File 1: vite.config.ts
+  ──────────────────────
+    Change:  base: '/budget-todo/',
+    To:      base: '/my-budget-app/',
+
+  File 2: public/manifest.json
+  ─────────────────────────────
+    Change:  "start_url": "/budget-todo/",
+             "scope": "/budget-todo/",
+    To:      "start_url": "/my-budget-app/",
+             "scope": "/my-budget-app/",
+
+  File 3: index.html
+  ───────────────────
+    Change:  <link rel="manifest" href="/budget-todo/manifest.json" />
+    To:      <link rel="manifest" href="/my-budget-app/manifest.json" />
+
+  File 4: public/sw.js
+  ─────────────────────
+    Change every occurrence of '/budget-todo' and '/budget-todo/' to
+    '/my-budget-app' and '/my-budget-app/' respectively. There are 3 places:
+      Line ~23: client.url.includes('/budget-todo')
+      Line ~27: self.clients.openWindow('/budget-todo/')
+    Also update the icon paths in src/hooks/useNotifications.ts:
+      icon: '/budget-todo/icon-192.svg'  →  '/my-budget-app/icon-192.svg'
+      badge: '/budget-todo/icon-192.svg' →  '/my-budget-app/icon-192.svg'
+
+  TIP: Do a project-wide search for "budget-todo" and replace all occurrences
+  with your repo name. In VS Code: Ctrl+Shift+H → search "budget-todo" →
+  replace with "my-budget-app".
+
+STEP 4 — Install dependencies
+    npm install
+
+STEP 5 — Test locally
+    npm run dev
+  Open http://localhost:3000/my-budget-app/ in your browser.
+
+STEP 6 — Push to GitHub
+    git add -A
+    git commit -m "initial setup"
+    git push -u origin main
+
+STEP 7 — Enable GitHub Pages
+  • Go to your repo → Settings → Pages
+  • Source: "Deploy from a branch"
+  • Branch: "gh-pages" (this will appear after the first GitHub Actions run)
+  • Folder: "/ (root)"
+  • Save
+
+  The GitHub Actions workflow (.github/workflows/deploy.yml) will automatically
+  build and deploy on every push to main. Wait 1-2 minutes for the first
+  deployment.
+
+STEP 8 — Verify
+  Visit: https://YOUR_USERNAME.github.io/YOUR_REPO/
+
+  If you see a blank page, check the browser console (F12) for 404 errors
+  on JS/CSS files — this usually means the base path wasn't updated correctly.
+
+================================================================================
+C. RUNNING LOCALLY
+================================================================================
+
+  cd budget-todo-app
+  npm install          # First time only
+  npm run dev          # Starts dev server at http://localhost:3000
+
+  The dev server has hot-reload — changes to code are reflected instantly.
+
+  To run with a different port:
+  Edit vite.config.ts → server.port → change 3000 to your preferred port.
+
+================================================================================
+D. BUILD & MANUAL DEPLOY
+================================================================================
+
+  npm run build        # Compiles TypeScript + creates production bundle in dist/
+
+  The dist/ folder contains the static site. You can:
+  • Upload it to any static hosting (Netlify, Vercel, S3, etc.)
+  • Serve it with any HTTP server: npx serve dist
+
+  Note: If hosting at a path other than root, update vite.config.ts base
+  accordingly. If hosting at the root domain, set base: '/'.
+
+================================================================================
+E. COMMON CUSTOMIZATIONS
+================================================================================
+
+All customizations below require a rebuild after changes:
+  npm run build
+Then commit and push to trigger deployment.
+
+──────────────────────────────────────────────────────────────────────────────
+E1. CHANGE COLORS (THEME)
+──────────────────────────────────────────────────────────────────────────────
+
+  File: src/styles/global.css (lines 1-60)
+
+  All colors are defined as CSS custom properties in :root (light) and
+  [data-theme='dark'] (dark). Change any value to customize:
+
+  LIGHT MODE (:root block):
+    --bg-primary       Page background             Currently: #f5f6fa
+    --bg-secondary     Card/panel background       Currently: #ffffff
+    --bg-tertiary      Input/hover background      Currently: #e9ecef
+    --text-primary     Main text                   Currently: #212529
+    --text-secondary   Muted/secondary text        Currently: #6c757d
+    --border-color     Borders and dividers        Currently: #dee2e6
+    --accent           Primary brand color         Currently: #4f46e5 (indigo)
+    --accent-hover     Brand color on hover        Currently: #4338ca
+    --accent-light     Light accent backgrounds    Currently: #eef2ff
+    --danger           Delete/error red            Currently: #dc3545
+    --success          Success green               Currently: #16a34a
+    --warning          Warning yellow              Currently: #eab308
+
+  DARK MODE ([data-theme='dark'] block):
+    Same property names, darker values. Edit the values in the dark block.
+
+  EXAMPLE — Change accent from indigo to blue:
+    Light:  --accent: #2563eb;  --accent-hover: #1d4ed8;  --accent-light: #eff6ff;
+    Dark:   --accent: #60a5fa;  --accent-hover: #3b82f6;  --accent-light: #172554;
+
+──────────────────────────────────────────────────────────────────────────────
+E2. CHANGE FONT FAMILY
+──────────────────────────────────────────────────────────────────────────────
+
+  File: src/styles/global.css (around line 76)
+
+  Current:
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+      'Helvetica Neue', Arial, sans-serif;
+
+  To use Google Fonts (e.g., Inter):
+  1. Add to index.html <head>:
+     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  2. Change global.css:
+     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+──────────────────────────────────────────────────────────────────────────────
+E3. CHANGE FONT SIZES
+──────────────────────────────────────────────────────────────────────────────
+
+  Font sizes are set per-component in the CSS files. Key locations:
+
+  File: src/styles/global.css
+    .navbar-brand           → 1.2rem  (app title in navbar)
+    .navbar-tab             → 0.9rem  (tab button text)
+    .btn                    → 0.875rem (general button text)
+    .summary-value          → 1.25rem (budget summary numbers)
+    .empty-state-icon       → 3rem   (empty state emoji size)
+
+  File: src/styles/spreadsheet.css
+    Spreadsheet cell text sizes
+
+  File: src/styles/responsive.css
+    Component-specific sizes (todo items, notes, filters, etc.)
+
+  TIP: To scale the entire app, add a font-size to the <html> element
+  in global.css and use rem units. For example:
+    html { font-size: 15px; }   /* Default is ~16px */
+
+──────────────────────────────────────────────────────────────────────────────
+E4. CHANGE ICONS
+──────────────────────────────────────────────────────────────────────────────
+
+  The app uses Lucide React for all icons.
+  Browse all available icons: https://lucide.dev/icons/
+
+  To swap an icon:
+  1. Find the component file that uses it (see list below).
+  2. Change the import and the JSX usage.
+
+  EXAMPLE — Change the navbar brand icon from Wallet to Coins:
+
+    File: src/components/common/Navbar.tsx
+    Old:  import { ..., Wallet } from 'lucide-react'
+          <Wallet size={20} />
+    New:  import { ..., Coins } from 'lucide-react'
+          <Coins size={20} />
+
+  ICON SIZE is controlled by the "size" prop (in pixels):
+    <Wallet size={20} />   ← 20px icon
+    <Wallet size={16} />   ← 16px icon (used for buttons)
+    <Wallet size={12} />   ← 12px icon (used for labels)
+
+  ICON COLOR inherits from the parent's CSS color. To override:
+    <Wallet size={16} color="#dc3545" />
+    or use CSS: .my-class svg { color: red; }
+
+  FULL ICON INVENTORY BY COMPONENT:
+
+  Navbar.tsx            → Wallet, BarChart3, CheckSquare, Volume2, Moon, Sun
+  BudgetSummary.tsx     → Wallet, FlaskConical, TrendingUp, Hash
+  BudgetDashboard.tsx   → Copy, Pencil, Trash2, Download, Save, FolderOpen, Search
+  SpreadsheetGrid.tsx   → Palette, Trash2, GripVertical, Check, Ban, Plus
+  TodoDashboard.tsx     → ListTodo, Save, FolderOpen, Plus, ClipboardList
+  TodoFilter.tsx        → Search
+  TodoList.tsx          → ChevronRight, ChevronDown, FolderOpen, Bell, BellOff,
+                          Pin, ArrowRight, AlertTriangle, Calendar, Clock,
+                          AlarmClock, CheckCircle, Moon (as MoonSnooze), Trash2
+  TodoItem.tsx          → Calendar, Clock, StickyNote, Pencil, Trash2,
+                          ChevronDown, ChevronUp, Save, X
+  RingtoneSettings.tsx  → Volume2, Play, X, Upload, Music
+  ConfirmDialog.tsx     → AlertTriangle
+  ToastContainer.tsx    → X, CheckCircle, AlertTriangle, AlertCircle, Info
+
+──────────────────────────────────────────────────────────────────────────────
+E5. CHANGE CURRENCY
+──────────────────────────────────────────────────────────────────────────────
+
+  File: src/utils/formatCurrency.ts
+
+  Current (Indian Rupees):
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amount)
+
+  For US Dollars:
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount)
+
+  For Euros:
+    return new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(amount)
+
+  For British Pounds:
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP',
+    }).format(amount)
+
+  Also update CSV export headers in src/utils/csvExport.ts:
+    Change "Budget Planned (Rs)" and "What-If (Rs)" to match your currency.
+
+──────────────────────────────────────────────────────────────────────────────
+E6. CHANGE DATE/TIME FORMAT
+──────────────────────────────────────────────────────────────────────────────
+
+  File: src/utils/dateHelpers.ts
+
+  Date format (currently DD Mon YYYY, e.g., "02 Mar 2026"):
+    return date.toLocaleDateString('en-IN', {
+      day: '2-digit', month: 'short', year: 'numeric',
+    })
+
+  For US format (Mar 02, 2026):
+    return date.toLocaleDateString('en-US', {
+      month: 'short', day: '2-digit', year: 'numeric',
+    })
+
+  Time format (currently 12-hour, e.g., "2:30 PM"):
+    Modify the formatTime() function for 24-hour:
+      return `${hours}:${minutes}`
+
+──────────────────────────────────────────────────────────────────────────────
+E7. CHANGE APP NAME & BRANDING
+──────────────────────────────────────────────────────────────────────────────
+
+  Update these files:
+
+  1. index.html
+     <title>Budget &amp; Todo Tracker</title>         ← browser tab title
+     <link rel="icon" href="data:image/svg..." />     ← favicon (currently 💰)
+
+  2. public/manifest.json
+     "name": "Budget & Todo Tracker"                   ← full PWA name
+     "short_name": "BudgetTodo"                        ← short PWA name
+
+  3. src/components/common/Navbar.tsx
+     The JSX text "Budget & Todo" — change to your app name.
+
+  4. public/icon-192.svg
+     Replace with your own SVG icon for PWA installation.
+
+  5. To change the favicon to a custom image:
+     Replace the data URI in index.html with:
+     <link rel="icon" href="/YOUR_REPO_NAME/favicon.ico" />
+     And place favicon.ico in the public/ folder.
+
+──────────────────────────────────────────────────────────────────────────────
+E8. CHANGE SUMMARY CARD COLORS
+──────────────────────────────────────────────────────────────────────────────
+
+  File: src/styles/global.css
+
+  Light mode (in :root):
+    --color-budget: #16a34a;    ← Total Budget (green)
+    --color-whatif: #ea580c;    ← What-If Total (orange)
+    --color-diff:   #db2777;    ← Difference (pink)
+
+  Dark mode (in [data-theme='dark']):
+    --color-budget: #4ade80;
+    --color-whatif: #fb923c;
+    --color-diff:   #f472b6;
+
+  Change any hex value. Use darker shades for light mode and lighter shades
+  for dark mode to maintain contrast.
+
+──────────────────────────────────────────────────────────────────────────────
+E9. CHANGE ROW HIGHLIGHT COLORS
+──────────────────────────────────────────────────────────────────────────────
+
+  File: src/styles/global.css
+
+  Light mode:
+    --highlight-red:    #fee2e2;
+    --highlight-green:  #dcfce7;
+    --highlight-yellow: #fef9c3;
+    --highlight-orange: #ffedd5;
+
+  Dark mode:
+    --highlight-red:    #450a0a;
+    --highlight-green:  #052e16;
+    --highlight-yellow: #422006;
+    --highlight-orange: #431407;
+
+  To ADD a new highlight color (e.g., blue):
+  1. Add CSS variable:  --highlight-blue: #dbeafe; (light) / #172554; (dark)
+  2. Add to type: src/types/budget.ts → HighlightColor union add | 'blue'
+  3. Add to palette: src/components/budget/SpreadsheetGrid.tsx →
+     HIGHLIGHT_COLORS array → add { color: 'blue', label: 'Blue' }
+  4. Add CSS class: src/styles/spreadsheet.css → add .highlight-blue rule
+
+──────────────────────────────────────────────────────────────────────────────
+E10. CHANGE TOAST DURATIONS
+──────────────────────────────────────────────────────────────────────────────
+
+  File: src/store/toastStore.ts
+
+  Default durations (in milliseconds):
+    success → 3500  (3.5 seconds)
+    info    → 3500  (3.5 seconds)
+    warning → 4000  (4 seconds)
+    error   → 5000  (5 seconds)
+
+  Modify in the toast shorthand helpers at the bottom of the file.
+
+──────────────────────────────────────────────────────────────────────────────
+E11. CHANGE SNOOZE OPTIONS
+──────────────────────────────────────────────────────────────────────────────
+
+  File: src/components/todo/TodoList.tsx
+
+  Current options:
+    const SNOOZE_OPTIONS = [
+      { label: '15 min', minutes: 15 },
+      { label: '30 min', minutes: 30 },
+      { label: '1 hr',   minutes: 60 },
+      { label: '2 hr',   minutes: 120 },
+      { label: '3 hr',   minutes: 180 },
+      { label: '4 hr',   minutes: 240 },
+      { label: '5 hr',   minutes: 300 },
+    ]
+
+  Add, remove, or change any entry. The 'minutes' value is what matters.
+
+──────────────────────────────────────────────────────────────────────────────
+E12. ADD/REMOVE PRESET ALARM TONES
+──────────────────────────────────────────────────────────────────────────────
+
+  File: src/store/ringtoneStore.ts
+
+  Presets are defined in the PRESET_TONES array:
+    { id: 'classic', label: 'Classic Beeps', emoji: '🔔' },
+    ...
+
+  Each preset has a corresponding play function (playClassic, playGentle, etc.)
+  that uses Web Audio API to generate the sound.
+
+  To add a new preset:
+  1. Add a new entry to the PresetTone type union.
+  2. Add it to the PRESET_TONES array.
+  3. Write a play function using Web Audio API patterns (copy an existing one).
+  4. Add a case in the playSelectedAlarm() switch statement.
+
+  To remove a preset:
+  1. Remove from the type, array, and delete the play function.
+  2. Ensure the default selectedPreset in the store still exists.
+
+──────────────────────────────────────────────────────────────────────────────
+E13. CHANGE CUSTOM UPLOAD SIZE LIMIT
+──────────────────────────────────────────────────────────────────────────────
+
+  File: src/components/common/RingtoneSettings.tsx
+
+  Search for the 500KB check (it will be something like):
+    if (file.size > 500 * 1024)
+
+  Change 500 to your desired limit in KB. Keep in mind localStorage typically
+  has a 5-10MB total limit, and base64 encoding increases size by ~33%.
+
+================================================================================
+F. FOLDER & FILE REFERENCE
+================================================================================
+
+  CONFIGURATION FILES:
+    vite.config.ts              ← Build config, base path, port
+    tsconfig.json               ← TypeScript compiler options
+    package.json                ← Dependencies and npm scripts
+    .github/workflows/deploy.yml ← CI/CD pipeline for GitHub Pages
+    public/manifest.json        ← PWA manifest (name, icons, scope)
+    public/sw.js                ← Service Worker (notification handling)
+    index.html                  ← HTML entry point (title, favicon, meta)
+
+  STYLES:
+    src/styles/global.css       ← Theme variables, layout, component styles
+    src/styles/responsive.css   ← Media queries, component-specific styles
+    src/styles/spreadsheet.css  ← Budget spreadsheet grid styles
+
+  STATE MANAGEMENT:
+    src/store/budgetStore.ts    ← Budget sheets & rows (budget-storage)
+    src/store/todoStore.ts      ← Tasks, groups, reminders (todo-storage)
+    src/store/themeStore.ts     ← Light/dark toggle (theme-storage)
+    src/store/ringtoneStore.ts  ← Alarm sounds (ringtone-storage)
+    src/store/toastStore.ts     ← Toast notifications (no persistence)
+
+  UTILITIES:
+    src/utils/formatCurrency.ts ← Currency formatting (INR)
+    src/utils/dateHelpers.ts    ← Date/time formatting, overdue check
+    src/utils/csvExport.ts      ← CSV file generation for budget
+    src/utils/dataExport.ts     ← JSON export/import for full app data
+
+  TYPE DEFINITIONS:
+    src/types/budget.ts         ← BudgetRow, BudgetSheet, HighlightColor
+    src/types/todo.ts           ← TodoItem, Priority, FilterStatus
+
+================================================================================
+G. TROUBLESHOOTING
+================================================================================
+
+PROBLEM: Blank page after deploying to GitHub Pages
+  CAUSE:  Base path mismatch.
+  FIX:    Ensure vite.config.ts base matches your repo name exactly:
+          base: '/YOUR_REPO_NAME/'
+          Also check manifest.json and sw.js paths.
+
+PROBLEM: "npm run build" fails with TypeScript errors
+  CAUSE:  Type mismatches after code changes.
+  FIX:    Run "npx tsc --noEmit" to see detailed errors.
+          Fix the reported type issues before building.
+
+PROBLEM: Notifications don't appear
+  CAUSE:  Browser blocked notification permission.
+  FIX:    Click the lock icon in the address bar → Site settings →
+          Notifications → Allow. Then refresh the app.
+
+PROBLEM: Notifications work in browser but not in PWA (installed app)
+  CAUSE:  Service Worker not registered or outdated.
+  FIX:    Uninstall the PWA, clear browsing data for the site, reinstall.
+
+PROBLEM: Custom alarm tone doesn't play
+  CAUSE:  Browser autoplay policy blocks audio before user interaction.
+  FIX:    Ensure the user has interacted with the page (clicked something)
+          before the alarm fires. This is a browser security restriction.
+
+PROBLEM: Data disappeared
+  CAUSE:  User cleared browser storage, or localStorage quota exceeded.
+  FIX:    Data cannot be recovered unless the user has a JSON export.
+          Remind users to export regularly. Check localStorage usage:
+          Open DevTools → Application → Local Storage → see size.
+
+PROBLEM: Dark mode colors look wrong after customizing
+  CAUSE:  Only light mode variables were changed.
+  FIX:    Always update both :root AND [data-theme='dark'] blocks in
+          global.css when changing color variables.
+
+PROBLEM: New icon from Lucide not rendering
+  CAUSE:  Icon name doesn't match Lucide's export name.
+  FIX:    Check the exact import name at https://lucide.dev/icons/
+          Lucide uses PascalCase (e.g., "arrow-right" → ArrowRight).
+
+PROBLEM: GitHub Actions deployment fails
+  CAUSE:  Various — check the Actions tab in your repo for error logs.
+  COMMON: npm ci fails → delete package-lock.json, run npm install,
+          commit the new lock file.
+
+PROBLEM: App loads but styles are broken
+  CAUSE:  CSS file not imported.
+  FIX:    Check src/main.tsx — it should import all three CSS files:
+          import './styles/global.css'
+          import './styles/responsive.css'
+          import './styles/spreadsheet.css'
+
+================================================================================
+                          END OF RUNBOOK
+================================================================================
