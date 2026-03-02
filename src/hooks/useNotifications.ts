@@ -1,46 +1,111 @@
+/**
+ * Notification & Reminder system.
+ *
+ * Two-tier approach:
+ *   1. FOREGROUND — React setInterval checks every 30 s (fast, works when visible).
+ *   2. BACKGROUND — Service Worker wake loop reads from Cache API and fires
+ *      notifications even when the app is backgrounded / screen locked.
+ *
+ * Data flow: Zustand store → Cache API + postMessage → SW
+ */
+
 import { useEffect, useRef } from 'react'
 import { useTodoStore } from '../store/todoStore'
 import { playSelectedAlarm } from '../store/ringtoneStore'
 
 let swRegistration: ServiceWorkerRegistration | null = null
 
-// Register the service worker (needed for PWA notifications on home screen)
+const CACHE_NAME = 'reminder-data-v1'
+const DATA_URL = '/_reminders.json'
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Service Worker Registration
+// ──────────────────────────────────────────────────────────────────────────────
+
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!('serviceWorker' in navigator)) return null
   try {
     const reg = await navigator.serviceWorker.register('/budget-todo/sw.js')
     swRegistration = reg
+
+    // Register Periodic Background Sync (Chrome Android installed PWA)
+    try {
+      if ('periodicSync' in reg) {
+        await (reg as any).periodicSync.register('check-reminders', {
+          minInterval: 60 * 1000, // request 1 min; browser enforces its own minimum
+        })
+      }
+    } catch {
+      // periodic-background-sync permission not granted or API unavailable
+    }
+
     return reg
   } catch (err) {
-    console.warn('Service worker registration failed:', err)
+    console.warn('SW registration failed:', err)
     return null
   }
 }
 
-// Request notification permission
+// ──────────────────────────────────────────────────────────────────────────────
+// Notification Permission
+// ──────────────────────────────────────────────────────────────────────────────
+
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
   if (!('Notification' in window)) {
-    console.warn('This browser does not support notifications')
+    console.warn('Notifications not supported')
     return 'denied'
   }
   const permission = await Notification.requestPermission()
-  // Ensure SW is registered when permission is granted
   if (permission === 'granted' && !swRegistration) {
     await registerServiceWorker()
   }
   return permission
 }
 
-// Show a notification via Service Worker (works in PWA standalone mode)
+// ──────────────────────────────────────────────────────────────────────────────
+// Data Sync  (App → Cache API → SW)
+// ──────────────────────────────────────────────────────────────────────────────
+
+/** Write current items + reminders to the Cache API so the SW can read them. */
+async function syncToCache() {
+  try {
+    const { items, groupReminders } = useTodoStore.getState()
+    const cache = await caches.open(CACHE_NAME)
+    await cache.put(
+      DATA_URL,
+      new Response(JSON.stringify({ items, groupReminders, updatedAt: Date.now() }))
+    )
+  } catch { /* Cache API unavailable */ }
+}
+
+/** Post current data to the active SW via MessageChannel. */
+function syncToSW() {
+  const sw = navigator.serviceWorker?.controller
+  if (!sw) return
+  const { items, groupReminders } = useTodoStore.getState()
+  sw.postMessage({ type: 'SYNC_REMINDERS', payload: { items, groupReminders } })
+}
+
+/** Helper to post an arbitrary message to the SW. */
+function postToSW(message: Record<string, unknown>) {
+  navigator.serviceWorker?.controller?.postMessage(message)
+}
+
+/** Write to cache AND notify the SW. */
+async function fullSync() {
+  await syncToCache()
+  syncToSW()
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Foreground notification (shown via SW API, with fallback for plain tabs)
+// ──────────────────────────────────────────────────────────────────────────────
+
 async function showNotification(title: string, body: string) {
   if (Notification.permission !== 'granted') return
 
-  // Try service worker notification first (works in PWA)
   try {
-    let reg = swRegistration
-    if (!reg) {
-      reg = await navigator.serviceWorker?.ready
-    }
+    const reg = swRegistration ?? (await navigator.serviceWorker?.ready)
     if (reg) {
       await reg.showNotification(title, {
         body,
@@ -51,43 +116,70 @@ async function showNotification(title: string, body: string) {
       } as NotificationOptions)
       return
     }
-  } catch {
-    // fallback below
-  }
+  } catch { /* fallback below */ }
 
-  // Fallback: direct Notification (works in regular browser tabs)
   try {
     const n = new Notification(title, {
       body,
       tag: `group-reminder-${title}`,
       requireInteraction: true,
     })
-    setTimeout(() => n.close(), 30000)
-  } catch {
-    // Notifications not available
-  }
+    setTimeout(() => n.close(), 30_000)
+  } catch { /* not available */ }
 }
 
-// playAlarm is now handled by ringtoneStore.playSelectedAlarm()
+// ──────────────────────────────────────────────────────────────────────────────
+// Main Hook
+// ──────────────────────────────────────────────────────────────────────────────
 
-/**
- * Hook: checks every 30s if a group reminder should fire.
- *
- * Logic:
- * - Each group has a specific date + time for its reminder.
- * - If snoozedUntil is set and in the future, skip (snoozed).
- * - If dismissed, skip.
- * - Otherwise fire when current datetime >= reminder datetime.
- * - After snooze expires, fire again.
- */
 export function useTaskReminders() {
   const notifiedRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
-    // Register SW on mount
+    // ── Register SW ──
     registerServiceWorker()
 
+    // ── Listen for messages FROM the SW ──
+    const handleSWMessage = (event: MessageEvent) => {
+      const msg = event.data
+      if (!msg?.type) return
+
+      switch (msg.type) {
+        case 'PLAY_ALARM':
+          playSelectedAlarm()
+          break
+        case 'SNOOZE_REMINDER':
+          useTodoStore.getState().snoozeGroupReminder(msg.group, msg.minutes)
+          break
+        case 'DISMISS_REMINDER':
+          useTodoStore.getState().dismissGroupReminder(msg.group)
+          break
+        case 'PENDING_ACTIONS':
+          // Apply any actions the user took on notifications while the app was closed
+          if (Array.isArray(msg.actions)) {
+            for (const a of msg.actions) {
+              if (a.type === 'snooze') {
+                useTodoStore.getState().snoozeGroupReminder(a.group, a.minutes)
+              } else if (a.type === 'dismiss') {
+                useTodoStore.getState().dismissGroupReminder(a.group)
+              }
+            }
+          }
+          break
+      }
+    }
+    navigator.serviceWorker?.addEventListener('message', handleSWMessage)
+
+    // ── On first load, ask the SW for queued actions ──
+    navigator.serviceWorker?.ready.then(() => {
+      postToSW({ type: 'GET_PENDING_ACTIONS' })
+    })
+
+    // ── Foreground check (fast-path when app is visible) ──
     const check = () => {
+      // Skip when hidden — the SW handles background
+      if (document.hidden) return
+
       const { items, groupReminders } = useTodoStore.getState()
       const now = new Date()
 
@@ -95,16 +187,14 @@ export function useTaskReminders() {
         if (!reminder || !reminder.enabled || !reminder.date || !reminder.time) return
         if (reminder.dismissed) return
 
-        // Build the target fire time
         const targetStr = `${reminder.date}T${reminder.time}:00`
         const targetDate = new Date(targetStr)
         if (isNaN(targetDate.getTime())) return
 
-        // If snoozed and snooze hasn't expired yet, skip
+        // Snoozed
         if (reminder.snoozedUntil) {
           const snoozeEnd = new Date(reminder.snoozedUntil)
           if (now < snoozeEnd) return
-          // Snooze expired — fire again. Use snoozedUntil as the unique key so it doesn't double-fire.
           const snoozeKey = `${group}::snooze::${reminder.snoozedUntil}`
           if (notifiedRef.current.has(snoozeKey)) return
 
@@ -116,10 +206,8 @@ export function useTaskReminders() {
           return
         }
 
-        // Normal (non-snoozed) check: has the target time been reached?
+        // Normal
         if (now < targetDate) return
-
-        // Only fire within a 5-minute window to avoid re-firing on old reminders
         const diffMs = now.getTime() - targetDate.getTime()
         if (diffMs > 5 * 60 * 1000) return
 
@@ -135,10 +223,41 @@ export function useTaskReminders() {
     }
 
     check()
-    const interval = setInterval(check, 30000)
-    return () => clearInterval(interval)
+    const interval = setInterval(check, 30_000)
+
+    // ── Visibility change: sync when app backgrounds ──
+    const handleVisibility = () => {
+      fullSync()
+      if (document.hidden) {
+        // Tell the SW to start its background wake loop
+        postToSW({ type: 'KEEP_ALIVE' })
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    // ── Store subscription: re-sync whenever items or reminders change ──
+    const unsubscribe = useTodoStore.subscribe((state, prev) => {
+      if (state.items !== prev.items || state.groupReminders !== prev.groupReminders) {
+        fullSync()
+      }
+    })
+
+    // ── Initial sync ──
+    fullSync()
+
+    // ── Cleanup ──
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibility)
+      navigator.serviceWorker?.removeEventListener('message', handleSWMessage)
+      unsubscribe()
+    }
   }, [])
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Foreground notification helper
+// ──────────────────────────────────────────────────────────────────────────────
 
 function fireGroupNotification(group: string, pendingTasks: { title: string }[]) {
   const taskNames = pendingTasks
