@@ -1,0 +1,360 @@
+/* ===== Todo Styles ===== */
+.todo-dashboard {
+  padding-bottom: 2rem;
+}
+
+.todo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+.todo-header h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+/* Filters */
+.todo-filters {
+  margin-bottom: 1.25rem;
+}
+.todo-filters .search-input {
+  max-width: 100%;
+  margin-bottom: 0.75rem;
+  width: 100%;
+}
+
+.filter-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.filter-group label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.filter-btn {
+  padding: 0.35rem 0.75rem;
+  border: none;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-right: 1px solid var(--border-color);
+}
+.filter-btn:last-child {
+  border-right: none;
+}
+.filter-btn:hover {
+  background: var(--bg-tertiary);
+}
+.filter-btn.active {
+  background: var(--accent);
+  color: white;
+}
+
+/* Todo Groups */
+.todo-group {
+  margin-bottom: 1.5rem;
+}
+
+.todo-group-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.todo-group-name {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.todo-group-count {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  padding: 0.1rem 0.5rem;
+  border-radius: 12px;
+}
+
+/* Todo Items */
+.todo-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  transition: all 0.2s;
+}
+.todo-item:hover {
+  box-shadow: var(--shadow);
+}
+.todo-item.completed {
+  opacity: 0.55;
+}
+.todo-item.completed .todo-title {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+}
+.todo-item.overdue {
+  border-left: 3px solid var(--danger);
+}
+
+/* Custom Checkbox */
+.todo-checkbox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.todo-checkbox input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.checkmark {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--border-color);
+  border-radius: 50%;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.todo-checkbox input:checked + .checkmark {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.todo-checkbox input:checked + .checkmark::after {
+  content: '✓';
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+
+.todo-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.todo-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.todo-meta {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.2rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.todo-date,
+.todo-time {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.overdue-text {
+  color: var(--danger) !important;
+  font-weight: 600;
+}
+
+.todo-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+/* Todo Form Modal */
+.todo-form-modal {
+  min-width: 400px;
+  max-width: 500px;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0.3rem;
+  color: var(--text-secondary);
+}
+.form-group input,
+.form-group select {
+  width: 100%;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+.form-row .form-group {
+  flex: 1;
+}
+
+.group-selector {
+  display: flex;
+  gap: 0.5rem;
+}
+.group-selector select {
+  flex: 1;
+}
+
+.new-group-input {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.new-group-input input {
+  flex: 1;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .navbar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 0.5rem 1rem;
+    gap: 0;
+  }
+  .navbar-brand {
+    font-size: 1rem;
+  }
+  .navbar-tabs {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    height: 44px;
+  }
+  .navbar-tab {
+    flex: 1;
+    justify-content: center;
+    font-size: 0.85rem;
+  }
+
+  .container {
+    padding: 1rem;
+  }
+
+  .sheet-tabs-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .sheet-actions {
+    justify-content: center;
+  }
+
+  .summary-bar {
+    flex-direction: column;
+  }
+  .summary-item {
+    min-width: auto;
+  }
+
+  .spreadsheet th,
+  .spreadsheet td {
+    padding: 0.3rem 0.4rem;
+    font-size: 0.8rem;
+  }
+  .col-drag {
+    display: none;
+  }
+  .col-expense {
+    min-width: 120px;
+  }
+  .col-budget,
+  .col-whatif {
+    min-width: 100px;
+  }
+  .cell-display {
+    padding: 0.4rem 0.5rem;
+    min-height: 34px;
+  }
+
+  .search-input {
+    max-width: 100% !important;
+  }
+
+  /* Todo responsive */
+  .todo-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .todo-item {
+    flex-wrap: wrap;
+  }
+  .todo-form-modal {
+    min-width: auto;
+    width: 95vw;
+  }
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  .todo-actions {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-brand {
+    font-size: 0.85rem;
+  }
+  .theme-toggle {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  .btn {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.78rem;
+  }
+  .summary-value {
+    font-size: 1.05rem;
+  }
+}

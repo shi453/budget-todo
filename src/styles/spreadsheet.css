@@ -1,0 +1,243 @@
+/* ===== Budget Dashboard ===== */
+.budget-dashboard {
+  padding-bottom: 2rem;
+}
+
+/* Sheet Tabs */
+.sheet-tabs-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.sheet-tabs {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.sheet-tab {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.sheet-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+.sheet-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: var(--accent-light);
+}
+.sheet-tab.add-tab {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.sheet-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Toolbar */
+.toolbar {
+  margin-bottom: 1rem;
+}
+
+.search-input {
+  width: 100%;
+  max-width: 300px;
+  padding: 0.5rem 0.75rem;
+}
+
+/* Spreadsheet Table */
+.spreadsheet-wrapper {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+}
+
+.spreadsheet {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-secondary);
+}
+
+.spreadsheet th {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border-bottom: 2px solid var(--border-color);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.spreadsheet td {
+  padding: 0.15rem;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+.spreadsheet tbody tr {
+  transition: filter 0.15s;
+}
+.spreadsheet tbody tr:hover {
+  filter: brightness(0.97);
+}
+[data-theme='dark'] .spreadsheet tbody tr:hover {
+  filter: brightness(1.15);
+}
+.spreadsheet tbody tr.dragging {
+  opacity: 0.4;
+}
+
+/* Column Widths */
+.col-drag {
+  width: 30px;
+  text-align: center;
+}
+.col-num {
+  width: 40px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+.col-expense {
+  min-width: 200px;
+  width: 40%;
+}
+.col-budget {
+  min-width: 140px;
+  width: 22%;
+}
+.col-whatif {
+  min-width: 140px;
+  width: 22%;
+}
+.col-actions {
+  width: 80px;
+}
+
+/* Cell Display & Edit */
+.cell-display {
+  padding: 0.5rem 0.75rem;
+  cursor: text;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+.cell-display:hover {
+  background: var(--accent-light);
+}
+
+.cell-number {
+  justify-content: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+.cell-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--accent) !important;
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+.cell-input[type='number'] {
+  text-align: right;
+}
+
+/* Drag Handle */
+.drag-handle {
+  cursor: grab;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  opacity: 0.3;
+  transition: opacity 0.2s;
+  user-select: none;
+}
+.drag-handle:hover {
+  opacity: 1;
+}
+
+/* Row Actions */
+.row-actions {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.color-picker-wrapper {
+  position: relative;
+}
+
+.color-picker-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  z-index: 50;
+  animation: modalIn 0.15s ease-out;
+}
+
+/* Totals Row */
+.totals-row {
+  background: var(--bg-tertiary);
+  font-weight: 700;
+}
+.totals-row td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: none;
+}
+.totals-label {
+  text-align: right;
+  padding-right: 1rem !important;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+.totals-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+
+.add-row-btn {
+  margin-top: 0.75rem;
+  width: 100%;
+}

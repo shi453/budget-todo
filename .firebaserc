@@ -1,0 +1,10 @@
+{
+  "projects": {
+    "default": {
+      "database": "your-database-name",
+      "projectId": "your-project-id",
+      "storageBucket": "your-storage-bucket",
+      "location": "us-central"
+    }
+  }
+}
