@@ -40,6 +40,7 @@ interface ExportedTodoItem {
   time: string
   completed: boolean
   priority: Priority
+  notes?: string
   createdAt: string
 }
 
@@ -138,6 +139,7 @@ function stripTodoIds(items: TodoItem[]): ExportedTodoItem[] {
     time: i.time,
     completed: i.completed,
     priority: i.priority,
+    notes: i.notes,
     createdAt: i.createdAt,
   }))
 }
@@ -169,6 +171,7 @@ function rehydrateTodoItems(exported: ExportedTodoItem[]): TodoItem[] {
     time: i.time || '',
     completed: !!i.completed,
     priority: i.priority || 'medium',
+    notes: i.notes || '',
     createdAt: i.createdAt || new Date().toISOString(),
   }))
 }

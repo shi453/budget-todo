@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import type { TodoItem as TodoItemType } from '../../types/todo'
 import { useTodoStore } from '../../store/todoStore'
 import { formatDate, formatTime, isOverdue } from '../../utils/dateHelpers'
@@ -11,6 +11,7 @@ interface TodoItemProps {
 const TodoItem: React.FC<TodoItemProps> = ({ item, onEdit }) => {
   const { toggleComplete, deleteItem } = useTodoStore()
   const overdue = !item.completed && isOverdue(item.date, item.time)
+  const [showNotes, setShowNotes] = useState(false)
 
   return (
     <div
@@ -39,7 +40,19 @@ const TodoItem: React.FC<TodoItemProps> = ({ item, onEdit }) => {
           <span className={`badge badge-${item.priority}`}>
             {item.priority}
           </span>
+          {item.notes && (
+            <button
+              className="btn-icon notes-indicator"
+              onClick={() => setShowNotes(!showNotes)}
+              title={showNotes ? 'Hide notes' : 'Show notes'}
+            >
+              📝
+            </button>
+          )}
         </div>
+        {showNotes && item.notes && (
+          <div className="todo-notes">{item.notes}</div>
+        )}
       </div>
 
       <div className="todo-actions">

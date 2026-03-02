@@ -16,6 +16,7 @@ const TodoForm: React.FC<TodoFormProps> = ({ editItem, onClose }) => {
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
   const [priority, setPriority] = useState<Priority>('medium')
+  const [notes, setNotes] = useState('')
   const [showNewGroup, setShowNewGroup] = useState(false)
 
   useEffect(() => {
@@ -25,6 +26,7 @@ const TodoForm: React.FC<TodoFormProps> = ({ editItem, onClose }) => {
       setDate(editItem.date)
       setTime(editItem.time)
       setPriority(editItem.priority)
+      setNotes(editItem.notes || '')
     }
   }, [editItem])
 
@@ -39,6 +41,7 @@ const TodoForm: React.FC<TodoFormProps> = ({ editItem, onClose }) => {
         date,
         time,
         priority,
+        notes: notes.trim(),
       })
     } else {
       addItem({
@@ -47,6 +50,7 @@ const TodoForm: React.FC<TodoFormProps> = ({ editItem, onClose }) => {
         date,
         time,
         priority,
+        notes: notes.trim(),
         completed: false,
       })
     }
@@ -159,6 +163,17 @@ const TodoForm: React.FC<TodoFormProps> = ({ editItem, onClose }) => {
                 onChange={(e) => setTime(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="form-group">
+            <label>Notes</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add notes or details..."
+              rows={3}
+              className="notes-textarea"
+            />
           </div>
 
           <div className="modal-actions">

@@ -9,5 +9,6 @@ export interface TodoItem {
   time: string
   completed: boolean
   priority: Priority
+  notes?: string
   createdAt: string
 }

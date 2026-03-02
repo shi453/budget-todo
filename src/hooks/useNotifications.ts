@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useTodoStore } from '../store/todoStore'
+import { playSelectedAlarm } from '../store/ringtoneStore'
 
 let swRegistration: ServiceWorkerRegistration | null = null
 
@@ -67,34 +68,7 @@ async function showNotification(title: string, body: string) {
   }
 }
 
-// Play a short alarm beep using Web Audio API
-function playAlarm() {
-  try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
-    const oscillator = ctx.createOscillator()
-    const gain = ctx.createGain()
-    oscillator.connect(gain)
-    gain.connect(ctx.destination)
-
-    oscillator.frequency.value = 800
-    oscillator.type = 'sine'
-    gain.gain.value = 0.3
-
-    oscillator.start()
-
-    // Three short beeps
-    gain.gain.setValueAtTime(0.3, ctx.currentTime)
-    gain.gain.setValueAtTime(0, ctx.currentTime + 0.15)
-    gain.gain.setValueAtTime(0.3, ctx.currentTime + 0.3)
-    gain.gain.setValueAtTime(0, ctx.currentTime + 0.45)
-    gain.gain.setValueAtTime(0.3, ctx.currentTime + 0.6)
-    gain.gain.setValueAtTime(0, ctx.currentTime + 0.75)
-
-    oscillator.stop(ctx.currentTime + 0.8)
-  } catch {
-    // Audio not available
-  }
-}
+// playAlarm is now handled by ringtoneStore.playSelectedAlarm()
 
 /**
  * Hook: checks every 30s if a group reminder should fire.
@@ -180,5 +154,5 @@ function fireGroupNotification(group: string, pendingTasks: { title: string }[])
     `⏰ ${group} — ${pendingTasks.length} pending task${pendingTasks.length > 1 ? 's' : ''}`,
     `${taskNames}${extra}`
   )
-  playAlarm()
+  playSelectedAlarm()
 }

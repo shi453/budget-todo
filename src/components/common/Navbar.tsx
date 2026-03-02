@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useThemeStore } from '../../store/themeStore'
+import RingtoneSettings from './RingtoneSettings'
 
 interface NavbarProps {
   activeTab: 'budget' | 'todo'
@@ -8,6 +9,7 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange }) => {
   const { theme, toggleTheme } = useThemeStore()
+  const [showRingtone, setShowRingtone] = useState(false)
 
   return (
     <nav className="navbar">
@@ -27,11 +29,19 @@ const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange }) => {
         </button>
       </div>
       <div className="navbar-actions">
+        <button
+          className="btn-icon navbar-settings-btn"
+          onClick={() => setShowRingtone(true)}
+          title="Notification sound settings"
+        >
+          🔊
+        </button>
         <button className="theme-toggle" onClick={toggleTheme}>
           {theme === 'light' ? '🌙' : '☀️'}{' '}
           {theme === 'light' ? 'Dark' : 'Light'}
         </button>
       </div>
+      {showRingtone && <RingtoneSettings onClose={() => setShowRingtone(false)} />}
     </nav>
   )
 }
