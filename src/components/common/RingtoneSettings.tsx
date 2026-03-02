@@ -6,6 +6,7 @@ import {
   playSelectedAlarm,
   pickAudioFile,
 } from '../../store/ringtoneStore'
+import { Volume2, Play, X, Upload, Music } from 'lucide-react'
 
 const RingtoneSettings: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const {
@@ -33,7 +34,7 @@ const RingtoneSettings: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal ringtone-modal" onClick={(e) => e.stopPropagation()}>
-        <h3>🔊 Notification Sound</h3>
+        <h3><Volume2 size={18} /> Notification Sound</h3>
 
         <div className="ringtone-section">
           <div className="ringtone-section-title">Preset Tones</div>
@@ -54,7 +55,7 @@ const RingtoneSettings: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   }}
                   title="Preview"
                 >
-                  ▶
+                  <Play size={12} />
                 </button>
               </div>
             ))}
@@ -65,7 +66,7 @@ const RingtoneSettings: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           <div className="ringtone-section-title">Custom Ringtone</div>
           {customAudioData ? (
             <div className={`ringtone-option custom-option ${useCustom ? 'active' : ''}`}>
-              <span className="ringtone-emoji">🎶</span>
+              <Music size={16} />
               <span className="ringtone-label" onClick={() => setUseCustom(true)}>
                 {customAudioName || 'Custom audio'}
               </span>
@@ -77,14 +78,14 @@ const RingtoneSettings: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 }}
                 title="Preview"
               >
-                ▶
+                <Play size={12} />
               </button>
               <button
                 className="btn-icon danger"
                 onClick={clearCustomAudio}
                 title="Remove"
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
           ) : (
@@ -97,7 +98,7 @@ const RingtoneSettings: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             onClick={handleUpload}
             disabled={uploading}
           >
-            {uploading ? '...' : '📁 Upload Audio File'}
+            {uploading ? '...' : <><Upload size={14} /> Upload Audio File</>}
           </button>
         </div>
 
@@ -107,7 +108,7 @@ const RingtoneSettings: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             className="btn btn-primary btn-sm"
             onClick={playSelectedAlarm}
           >
-            🔊 Play Current Sound
+            <Volume2 size={14} /> Play Current Sound
           </button>
         </div>
 

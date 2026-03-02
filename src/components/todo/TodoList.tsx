@@ -4,6 +4,14 @@ import TodoItem from './TodoItem'
 import { useTodoStore } from '../../store/todoStore'
 import { formatDate, formatTime, isToday } from '../../utils/dateHelpers'
 import { requestNotificationPermission } from '../../hooks/useNotifications'
+import { toast } from '../../store/toastStore'
+import ConfirmDialog from '../common/ConfirmDialog'
+import {
+  ChevronRight, ChevronDown, FolderOpen,
+  Bell, BellOff, Pin, ArrowRight, AlertTriangle,
+  Calendar, Clock, AlarmClock, CheckCircle,
+  Moon as MoonSnooze, Trash2
+} from 'lucide-react'
 
 interface TodoListProps {
   group: string
@@ -11,17 +19,17 @@ interface TodoListProps {
   onEdit: (id: string) => void
 }
 
-function getDateLabel(dateStr: string): string {
-  if (!dateStr) return 'No Date'
-  if (isToday(dateStr)) return `📌 Today — ${formatDate(dateStr)}`
+function getDateLabel(dateStr: string): React.ReactNode {
+  if (!dateStr) return <><Calendar size={12} /> No Date</>
+  if (isToday(dateStr)) return <><Pin size={12} /> Today — {formatDate(dateStr)}</>
   const taskDate = new Date(dateStr + 'T00:00:00')
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const tomorrow = new Date(today)
   tomorrow.setDate(tomorrow.getDate() + 1)
-  if (taskDate.getTime() === tomorrow.getTime()) return `🔜 Tomorrow — ${formatDate(dateStr)}`
-  if (taskDate < today) return `⚠️ Overdue — ${formatDate(dateStr)}`
-  return `📅 ${formatDate(dateStr)}`
+  if (taskDate.getTime() === tomorrow.getTime()) return <><ArrowRight size={12} /> Tomorrow — {formatDate(dateStr)}</>
+  if (taskDate < today) return <><AlertTriangle size={12} /> Overdue — {formatDate(dateStr)}</>
+  return <><Calendar size={12} /> {formatDate(dateStr)}</>
 }
 
 const SNOOZE_OPTIONS = [
@@ -39,6 +47,7 @@ const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
   const reminder = groupReminders[group] || { enabled: false, date: '', time: '09:00' }
   const [showReminderSettings, setShowReminderSettings] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   // Determine if reminder has fired (time has passed, not snoozed, not dismissed)
   const isReminderFired = (() => {
@@ -58,7 +67,7 @@ const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
     if (!reminder.enabled) {
       const permission = await requestNotificationPermission()
       if (permission !== 'granted') {
-        alert('Please allow notifications in your browser settings to enable reminders.')
+        toast.warning('Please allow notifications in your browser settings to enable reminders.')
         return
       }
     }
@@ -107,10 +116,11 @@ const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
           className="btn-icon group-collapse-btn"
           onClick={() => setCollapsed(!collapsed)}
           title={collapsed ? 'Expand group' : 'Collapse group'}
+          aria-label={collapsed ? 'Expand group' : 'Collapse group'}
         >
-          {collapsed ? '▶' : '▼'}
+          {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
         </button>
-        <h3 className="todo-group-name">📁 {group}</h3>
+        <h3 className="todo-group-name"><FolderOpen size={16} /> {group}</h3>
         <span className="todo-group-count">
           {items.length} task{items.length !== 1 ? 's' : ''}
         </span>
@@ -118,26 +128,34 @@ const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
           className={`btn-icon reminder-toggle ${reminder.enabled ? 'reminder-on' : ''}`}
           onClick={() => setShowReminderSettings(!showReminderSettings)}
           title={reminder.enabled ? `Reminder set for ${reminder.date || 'no date'} at ${reminder.time} — click to configure` : 'Set reminder'}
+          aria-label="Toggle reminder settings"
         >
-          {reminder.enabled ? '🔔' : '🔕'}
+          {reminder.enabled ? <Bell size={16} /> : <BellOff size={16} />}
         </button>
         {group !== 'General' && (
           <button
             className="btn-icon danger btn-sm"
-            onClick={() => {
-              if (
-                confirm(
-                  `Delete group "${group}"? Tasks will move to General.`
-                )
-              )
-                deleteGroup(group)
-            }}
+            onClick={() => setShowDeleteConfirm(true)}
             title="Delete group"
+            aria-label="Delete group"
           >
-            ✕
+            <Trash2 size={14} />
           </button>
         )}
       </div>
+
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title="Delete Group"
+          message={`Delete group "${group}"? Tasks will move to General.`}
+          confirmLabel="Delete"
+          onConfirm={() => {
+            deleteGroup(group)
+            setShowDeleteConfirm(false)
+          }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
 
       {/* Group Reminder Settings Panel */}
       {!collapsed && showReminderSettings && (
@@ -157,7 +175,7 @@ const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
             <>
               <div className="reminder-panel-row">
                 <label className="reminder-time-label">
-                  <span>📅 Date:</span>
+                  <span><Calendar size={14} /> Date:</span>
                   <input
                     type="date"
                     value={reminder.date || ''}
@@ -168,7 +186,7 @@ const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
               </div>
               <div className="reminder-panel-row">
                 <label className="reminder-time-label">
-                  <span>⏰ Time:</span>
+                  <span><AlarmClock size={14} /> Time:</span>
                   <input
                     type="time"
                     value={reminder.time}
@@ -181,9 +199,9 @@ const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
                 <div className="reminder-panel-row">
                   <span className="reminder-hint">
                     {reminder.dismissed
-                      ? '✅ Reminder was dismissed.'
+                      ? <><CheckCircle size={12} /> Reminder was dismissed.</>
                       : reminder.snoozedUntil && new Date(reminder.snoozedUntil) > new Date()
-                        ? `💤 Snoozed until ${new Date(reminder.snoozedUntil).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                        ? <><MoonSnooze size={12} /> Snoozed until {new Date(reminder.snoozedUntil).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>
                         : `Notification will fire on ${formatDate(reminder.date)} at ${formatTime(reminder.time)} for all pending tasks in "${group}".`}
                   </span>
                 </div>
@@ -191,7 +209,7 @@ const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
               {/* Snooze & Dismiss controls — visible when reminder has fired */}
               {isReminderFired && !reminder.dismissed && (
                 <div className="reminder-panel-row snooze-row">
-                  <span className="snooze-label">🔔 Reminder fired!</span>
+                  <span className="snooze-label"><Bell size={14} /> Reminder fired!</span>
                   <div className="snooze-buttons">
                     {SNOOZE_OPTIONS.map((opt) => (
                       <button
@@ -199,14 +217,14 @@ const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
                         className="btn btn-sm snooze-btn"
                         onClick={() => handleSnooze(opt.minutes)}
                       >
-                        💤 {opt.label}
+                        <MoonSnooze size={12} /> {opt.label}
                       </button>
                     ))}
                     <button
                       className="btn btn-sm dismiss-btn"
                       onClick={handleDismiss}
                     >
-                      ✅ Dismiss
+                      <CheckCircle size={12} /> Dismiss
                     </button>
                   </div>
                 </div>
@@ -219,7 +237,7 @@ const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
       {!collapsed && sortedDateKeys.map((dateKey) => (
         <div key={dateKey} className="todo-date-group">
           <div className="todo-date-header">
-            {dateKey === '__no_date__' ? '📋 No Date' : getDateLabel(dateKey)}
+            {dateKey === '__no_date__' ? <><Calendar size={12} /> No Date</> : getDateLabel(dateKey)}
           </div>
           <div className="todo-items">
             {dateGroups[dateKey].map((item) => (

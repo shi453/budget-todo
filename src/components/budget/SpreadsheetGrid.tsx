@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useBudgetStore } from '../../store/budgetStore'
 import type { BudgetSheet, HighlightColor } from '../../types/budget'
 import { formatCurrency } from '../../utils/formatCurrency'
+import { Palette, Trash2, GripVertical, Check, Ban, Plus } from 'lucide-react'
 
 interface SpreadsheetGridProps {
   sheet: BudgetSheet
@@ -163,7 +164,7 @@ const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
             <th className="col-expense">Expense Details</th>
             <th className="col-budget">Budget Planned (₹)</th>
             <th className="col-whatif">What-If (₹)</th>
-            <th className="col-exclude" title="Exclude from totals">⊘</th>
+            <th className="col-exclude" title="Exclude from totals"><Ban size={12} /></th>
             <th className="col-actions">Actions</th>
           </tr>
         </thead>
@@ -179,7 +180,7 @@ const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
               className={`${dragIndex === index ? 'dragging' : ''} ${row.excluded ? 'row-excluded' : ''}`}
             >
               <td className="col-drag">
-                <span className="drag-handle">⣿</span>
+                <span className="drag-handle"><GripVertical size={14} /></span>
               </td>
               <td className="col-num">{index + 1}</td>
               <td className="col-expense">
@@ -197,7 +198,7 @@ const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
                   onClick={() => toggleRowExcluded(row.id)}
                   title={row.excluded ? 'Include in totals' : 'Exclude from totals'}
                 >
-                  {row.excluded ? '⊘' : '✓'}
+                  {row.excluded ? <Ban size={14} /> : <Check size={14} />}
                 </button>
               </td>
               <td className="col-actions">
@@ -212,7 +213,7 @@ const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
                       }
                       title="Highlight row"
                     >
-                      🎨
+                      <Palette size={14} />
                     </button>
                     {colorPickerRowId === row.id && (
                       <div className="color-picker-dropdown">
@@ -235,7 +236,7 @@ const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
                     onClick={() => deleteRow(row.id)}
                     title="Delete row"
                   >
-                    ✕
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </td>
@@ -263,7 +264,7 @@ const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
         </tfoot>
       </table>
       <button className="btn btn-primary add-row-btn" onClick={addRow}>
-        + Add Row
+        <Plus size={14} /> Add Row
       </button>
     </div>
   )

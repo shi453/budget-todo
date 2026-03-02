@@ -225,44 +225,140 @@
 }
 
 /* ===== Notes on Tasks ===== */
-.notes-indicator {
-  font-size: 0.8rem;
-  padding: 0 0.25rem;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+
+/* Toggle button (always visible) */
+.notes-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
 }
-.notes-indicator:hover {
-  opacity: 1;
+.notes-toggle:hover {
+  color: var(--accent);
+  background: var(--bg-tertiary);
 }
-.todo-notes {
-  margin-top: 0.4rem;
-  padding: 0.5rem 0.75rem;
+.notes-toggle.has-notes {
+  color: var(--accent);
+  font-weight: 500;
+}
+.notes-toggle .chevron {
+  transition: transform 0.2s;
+}
+.notes-toggle.active .chevron {
+  transform: rotate(180deg);
+}
+
+/* Expandable notes panel */
+.todo-notes-panel {
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.75rem;
   background: var(--bg-tertiary);
   border-radius: var(--radius-sm);
+  border-left: 3px solid var(--accent);
+  animation: noteSlide 0.15s ease-out;
+}
+@keyframes noteSlide {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Read-only display */
+.notes-display {
+  position: relative;
+  cursor: pointer;
+  padding: 0.25rem 0.35rem;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+.notes-display:hover {
+  background: var(--bg-secondary);
+}
+.notes-text {
   font-size: 0.82rem;
   color: var(--text-secondary);
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.5;
-  border-left: 3px solid var(--accent);
 }
-.notes-textarea {
+.notes-placeholder {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  opacity: 0.5;
+  font-style: italic;
+}
+.notes-edit-hint {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  color: var(--text-secondary);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.notes-display:hover .notes-edit-hint {
+  opacity: 0.6;
+}
+
+/* Editing state */
+.notes-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.notes-inline-textarea {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--accent);
   border-radius: var(--radius-sm);
   background: var(--bg-primary);
   color: var(--text-primary);
   font-family: inherit;
   font-size: 0.875rem;
-  resize: vertical;
+  resize: none;
+  overflow: hidden;
   line-height: 1.5;
-  transition: border-color 0.2s;
+  min-height: 2.5rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.notes-textarea:focus {
+.notes-inline-textarea:focus {
   outline: none;
-  border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-light);
+}
+.notes-editor-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+.notes-editor-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+.notes-editor-actions button:first-child {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.notes-editor-actions button:first-child:hover {
+  filter: brightness(1.1);
+}
+.notes-editor-actions button:last-child:hover {
+  background: var(--bg-tertiary);
 }
 
 /* ===== Ringtone Settings Modal ===== */

@@ -1,5 +1,6 @@
 import React from 'react'
 import { useTodoStore } from '../../store/todoStore'
+import { Search } from 'lucide-react'
 
 const TodoFilter: React.FC = () => {
   const {
@@ -18,13 +19,16 @@ const TodoFilter: React.FC = () => {
 
   return (
     <div className="todo-filters">
-      <input
-        type="text"
-        placeholder="🔍 Search tasks..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="search-input"
-      />
+      <div className="search-wrapper">
+        <Search size={14} className="search-icon" />
+        <input
+          type="text"
+          placeholder="Search tasks..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="search-input search-has-icon"
+        />
+      </div>
 
       <div className="filter-row">
         <div className="filter-group">

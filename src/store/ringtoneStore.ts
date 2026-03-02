@@ -200,7 +200,8 @@ export function pickAudioFile(): Promise<{ dataUrl: string; name: string } | nul
       const file = (e.target as HTMLInputElement).files?.[0]
       if (!file) return resolve(null)
       if (file.size > 500 * 1024) {
-        alert('Audio file too large. Please select a file under 500 KB.')
+        // Lazy import to avoid circular dependency
+        import('./toastStore').then(m => m.toast.error('Audio file too large. Please select a file under 500 KB.'))
         return resolve(null)
       }
       const reader = new FileReader()

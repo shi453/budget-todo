@@ -5,12 +5,16 @@ import TodoFilter from './TodoFilter'
 import TodoList from './TodoList'
 import type { TodoItem } from '../../types/todo'
 import { exportTodoData, importTodoData } from '../../utils/dataExport'
+import ConfirmDialog from '../common/ConfirmDialog'
+import { toast } from '../../store/toastStore'
+import { ListTodo, Save, FolderOpen, Plus, ClipboardList } from 'lucide-react'
 
 const TodoDashboard: React.FC = () => {
   const { items, filterGroup, filterStatus, searchQuery } = useTodoStore()
   const { groups, groupReminders, importData } = useTodoStore()
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [pendingImport, setPendingImport] = useState<any>(null)
 
   // Apply filters
   const filteredItems = items.filter((item) => {
@@ -57,29 +61,26 @@ const TodoDashboard: React.FC = () => {
   const handleImport = async () => {
     const data = await importTodoData()
     if (data) {
-      const count = data.items.length
-      if (confirm(`Import ${count} task${count > 1 ? 's' : ''}? They will be added alongside your existing tasks.`)) {
-        importData(data.items, data.groups, data.groupReminders)
-      }
+      setPendingImport(data)
     }
   }
 
   return (
     <div className="todo-dashboard">
       <div className="todo-header">
-        <h2>📝 Todo List</h2>
+        <h2><ListTodo size={22} /> Todo List</h2>
         <div className="todo-header-actions">
           <button
             className="btn btn-sm btn-secondary"
             onClick={handleExport}
           >
-            💾 Export
+            <Save size={14} /> Export
           </button>
           <button
             className="btn btn-sm btn-secondary"
             onClick={handleImport}
           >
-            📂 Import
+            <FolderOpen size={14} /> Import
           </button>
           <button
             className="btn btn-primary"
@@ -88,7 +89,7 @@ const TodoDashboard: React.FC = () => {
               setShowForm(true)
             }}
           >
-            + Add Task
+            <Plus size={14} /> Add Task
           </button>
         </div>
       </div>
@@ -97,7 +98,7 @@ const TodoDashboard: React.FC = () => {
 
       {Object.keys(groupedItems).length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">📋</div>
+          <div className="empty-state-icon"><ClipboardList size={48} /></div>
           <p>No tasks found. Add your first task!</p>
         </div>
       ) : (
@@ -121,6 +122,21 @@ const TodoDashboard: React.FC = () => {
             setShowForm(false)
             setEditingId(null)
           }}
+        />
+      )}
+
+      {pendingImport && (
+        <ConfirmDialog
+          title="Import Tasks"
+          message={`Import ${pendingImport.items.length} task${pendingImport.items.length > 1 ? 's' : ''}? They will be added alongside your existing tasks.`}
+          confirmLabel="Import"
+          variant="primary"
+          onConfirm={() => {
+            importData(pendingImport.items, pendingImport.groups, pendingImport.groupReminders)
+            toast.success(`${pendingImport.items.length} task(s) imported.`)
+            setPendingImport(null)
+          }}
+          onCancel={() => setPendingImport(null)}
         />
       )}
     </div>

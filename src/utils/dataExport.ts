@@ -7,6 +7,7 @@
  *   (budget → new sheets, todo → new tasks merged into groups).
  */
 
+import { toast } from '../store/toastStore'
 import type { BudgetSheet, BudgetRow, HighlightColor } from '../types/budget'
 import type { TodoItem, Priority } from '../types/todo'
 import type { GroupReminder } from '../store/todoStore'
@@ -202,13 +203,13 @@ export async function importBudgetData(): Promise<BudgetSheet[] | null> {
     }
 
     if (!rawSheets || rawSheets.length === 0) {
-      alert('This file does not contain budget data.')
+      toast.error('This file does not contain budget data.')
       return null
     }
 
     return rehydrateSheets(rawSheets)
   } catch (err: any) {
-    alert(err.message || 'Import failed')
+    toast.error(err.message || 'Import failed')
     return null
   }
 }
@@ -255,7 +256,7 @@ export async function importTodoData(): Promise<{
     }
 
     if (!rawItems || rawItems.length === 0) {
-      alert('This file does not contain todo data.')
+      toast.error('This file does not contain todo data.')
       return null
     }
 
@@ -265,7 +266,7 @@ export async function importTodoData(): Promise<{
       groupReminders: rawReminders,
     }
   } catch (err: any) {
-    alert(err.message || 'Import failed')
+    toast.error(err.message || 'Import failed')
     return null
   }
 }

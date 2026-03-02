@@ -1,6 +1,7 @@
 import React from 'react'
 import type { BudgetSheet } from '../../types/budget'
 import { formatCurrency } from '../../utils/formatCurrency'
+import { Wallet, FlaskConical, TrendingUp, Hash } from 'lucide-react'
 
 interface BudgetSummaryProps {
   sheet: BudgetSheet
@@ -16,26 +17,21 @@ const BudgetSummary: React.FC<BudgetSummaryProps> = ({ sheet }) => {
   return (
     <div className="summary-bar">
       <div className="summary-item">
-        <div className="summary-label">Total Budget</div>
-        <div className="summary-value">{formatCurrency(totalBudget)}</div>
+        <div className="summary-label"><Wallet size={12} /> Total Budget</div>
+        <div className="summary-value" style={{ color: 'var(--color-budget)' }}>{formatCurrency(totalBudget)}</div>
       </div>
       <div className="summary-item">
-        <div className="summary-label">What-If Total</div>
-        <div className="summary-value">{formatCurrency(totalWhatIf)}</div>
+        <div className="summary-label"><FlaskConical size={12} /> What-If Total</div>
+        <div className="summary-value" style={{ color: 'var(--color-whatif)' }}>{formatCurrency(totalWhatIf)}</div>
       </div>
       <div className="summary-item">
-        <div className="summary-label">Difference</div>
-        <div
-          className="summary-value"
-          style={{
-            color: difference >= 0 ? 'var(--success)' : 'var(--danger)',
-          }}
-        >
+        <div className="summary-label"><TrendingUp size={12} /> Difference</div>
+        <div className="summary-value" style={{ color: 'var(--color-diff)' }}>
           {formatCurrency(difference)}
         </div>
       </div>
       <div className="summary-item">
-        <div className="summary-label">Items</div>
+        <div className="summary-label"><Hash size={12} /> Items</div>
         <div className="summary-value">
           {includedRows.length}
           {excludedCount > 0 && (

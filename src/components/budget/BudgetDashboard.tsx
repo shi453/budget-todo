@@ -4,6 +4,9 @@ import SpreadsheetGrid from './SpreadsheetGrid'
 import BudgetSummary from './BudgetSummary'
 import { exportToCSV } from '../../utils/csvExport'
 import { exportBudgetData, importBudgetData } from '../../utils/dataExport'
+import ConfirmDialog from '../common/ConfirmDialog'
+import { toast } from '../../store/toastStore'
+import { Copy, Pencil, Trash2, Download, Save, FolderOpen, Search } from 'lucide-react'
 
 const BudgetDashboard: React.FC = () => {
   const {
@@ -24,6 +27,8 @@ const BudgetDashboard: React.FC = () => {
   const [showRename, setShowRename] = useState(false)
   const [sheetName, setSheetName] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [pendingImport, setPendingImport] = useState<any>(null)
 
   const handleAddSheet = () => {
     if (sheetName.trim()) {
@@ -51,9 +56,7 @@ const BudgetDashboard: React.FC = () => {
 
   const handleDeleteSheet = () => {
     if (sheets.length > 1 && activeSheetId) {
-      if (confirm('Delete this sheet? This cannot be undone.')) {
-        deleteSheet(activeSheetId)
-      }
+      setShowDeleteConfirm(true)
     }
   }
 
@@ -64,10 +67,7 @@ const BudgetDashboard: React.FC = () => {
   const handleImport = async () => {
     const newSheets = await importBudgetData()
     if (newSheets) {
-      const count = newSheets.length
-      if (confirm(`Import ${count} sheet${count > 1 ? 's' : ''}? They will be added alongside your existing sheets.`)) {
-        importSheets(newSheets)
-      }
+      setPendingImport(newSheets)
     }
   }
 
@@ -115,7 +115,7 @@ const BudgetDashboard: React.FC = () => {
               setShowDuplicate(true)
             }}
           >
-            📋 Duplicate
+            <Copy size={14} /> Duplicate
           </button>
           <button
             className="btn btn-sm btn-secondary"
@@ -124,14 +124,14 @@ const BudgetDashboard: React.FC = () => {
               setShowRename(true)
             }}
           >
-            ✏️ Rename
+            <Pencil size={14} /> Rename
           </button>
           {sheets.length > 1 && (
             <button
               className="btn btn-sm btn-danger"
               onClick={handleDeleteSheet}
             >
-              🗑️ Delete
+              <Trash2 size={14} /> Delete
             </button>
           )}
           {activeSheet && (
@@ -139,20 +139,20 @@ const BudgetDashboard: React.FC = () => {
               className="btn btn-sm btn-secondary"
               onClick={() => exportToCSV(activeSheet)}
             >
-              📥 Export CSV
+              <Download size={14} /> Export CSV
             </button>
           )}
           <button
             className="btn btn-sm btn-secondary"
             onClick={handleExport}
           >
-            💾 Export Data
+            <Save size={14} /> Export Data
           </button>
           <button
             className="btn btn-sm btn-secondary"
             onClick={handleImport}
           >
-            📂 Import Data
+            <FolderOpen size={14} /> Import Data
           </button>
         </div>
       </div>
@@ -162,13 +162,16 @@ const BudgetDashboard: React.FC = () => {
 
       {/* Search bar */}
       <div className="toolbar">
-        <input
-          type="text"
-          placeholder="🔍 Search expenses..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="search-input"
-        />
+        <div className="search-wrapper">
+          <Search size={14} className="search-icon" />
+          <input
+            type="text"
+            placeholder="Search expenses..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input search-has-icon"
+          />
+        </div>
       </div>
 
       {/* Spreadsheet grid */}
@@ -213,6 +216,34 @@ const BudgetDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title="Delete Sheet"
+          message="Delete this sheet? This cannot be undone."
+          confirmLabel="Delete"
+          onConfirm={() => {
+            if (activeSheetId) deleteSheet(activeSheetId)
+            setShowDeleteConfirm(false)
+            toast.success('Sheet deleted.')
+          }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+
+      {pendingImport && (
+        <ConfirmDialog
+          title="Import Sheets"
+          message={`Import ${pendingImport.length} sheet${pendingImport.length > 1 ? 's' : ''}? They will be added alongside your existing sheets.`}
+          confirmLabel="Import"
+          variant="primary"
+          onConfirm={() => {
+            importSheets(pendingImport)
+            toast.success(`${pendingImport.length} sheet(s) imported.`)
+            setPendingImport(null)
+          }}
+          onCancel={() => setPendingImport(null)}
+        />
       )}
     </div>
   )

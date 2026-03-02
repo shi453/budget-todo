@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useThemeStore } from './store/themeStore'
 import { useTaskReminders } from './hooks/useNotifications'
 import Navbar from './components/common/Navbar'
+import ToastContainer from './components/common/ToastContainer'
 import BudgetDashboard from './components/budget/BudgetDashboard'
 import TodoDashboard from './components/todo/TodoDashboard'
 
@@ -24,6 +25,7 @@ function App() {
       <main className="container">
         {activeTab === 'budget' ? <BudgetDashboard /> : <TodoDashboard />}
       </main>
+      <ToastContainer />
     </div>
   )
 }

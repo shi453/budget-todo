@@ -139,9 +139,9 @@ const TodoForm: React.FC<TodoFormProps> = ({ editItem, onClose }) => {
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as Priority)}
               >
-                <option value="high">🔴 High</option>
-                <option value="medium">🟡 Medium</option>
-                <option value="low">🟢 Low</option>
+                <option value="high">● High</option>
+                <option value="medium">● Medium</option>
+                <option value="low">● Low</option>
               </select>
             </div>
           </div>
