@@ -34,6 +34,7 @@ interface TodoStore {
   setFilterGroup: (group: string) => void
   setFilterStatus: (status: FilterStatus) => void
   setSearchQuery: (query: string) => void
+  importData: (items: TodoItem[], groups: string[], groupReminders: Record<string, GroupReminder>) => void
 }
 
 export const useTodoStore = create<TodoStore>()(
@@ -146,6 +147,10 @@ export const useTodoStore = create<TodoStore>()(
       setFilterGroup: (group) => set({ filterGroup: group }),
       setFilterStatus: (status) => set({ filterStatus: status }),
       setSearchQuery: (query) => set({ searchQuery: query }),
+
+      importData: (items, groups, groupReminders) => {
+        set({ items, groups, groupReminders })
+      },
     }),
     { name: 'todo-storage' }
   )

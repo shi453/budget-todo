@@ -25,16 +25,20 @@ function getDateLabel(dateStr: string): string {
 }
 
 const SNOOZE_OPTIONS = [
-  { label: '5 min', minutes: 5 },
   { label: '15 min', minutes: 15 },
   { label: '30 min', minutes: 30 },
   { label: '1 hr', minutes: 60 },
+  { label: '2 hr', minutes: 120 },
+  { label: '3 hr', minutes: 180 },
+  { label: '4 hr', minutes: 240 },
+  { label: '5 hr', minutes: 300 },
 ]
 
 const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
   const { deleteGroup, groupReminders, setGroupReminder, snoozeGroupReminder, dismissGroupReminder } = useTodoStore()
   const reminder = groupReminders[group] || { enabled: false, date: '', time: '09:00' }
   const [showReminderSettings, setShowReminderSettings] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
 
   // Determine if reminder has fired (time has passed, not snoozed, not dismissed)
   const isReminderFired = (() => {
@@ -99,6 +103,13 @@ const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
   return (
     <div className="todo-group">
       <div className="todo-group-header">
+        <button
+          className="btn-icon group-collapse-btn"
+          onClick={() => setCollapsed(!collapsed)}
+          title={collapsed ? 'Expand group' : 'Collapse group'}
+        >
+          {collapsed ? '▶' : '▼'}
+        </button>
         <h3 className="todo-group-name">📁 {group}</h3>
         <span className="todo-group-count">
           {items.length} task{items.length !== 1 ? 's' : ''}
@@ -129,7 +140,7 @@ const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
       </div>
 
       {/* Group Reminder Settings Panel */}
-      {showReminderSettings && (
+      {!collapsed && showReminderSettings && (
         <div className="reminder-panel">
           <div className="reminder-panel-row">
             <label className="reminder-switch-label">
@@ -205,7 +216,7 @@ const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
         </div>
       )}
 
-      {sortedDateKeys.map((dateKey) => (
+      {!collapsed && sortedDateKeys.map((dateKey) => (
         <div key={dateKey} className="todo-date-group">
           <div className="todo-date-header">
             {dateKey === '__no_date__' ? '📋 No Date' : getDateLabel(dateKey)}

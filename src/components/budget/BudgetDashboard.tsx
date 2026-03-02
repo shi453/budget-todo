@@ -3,6 +3,7 @@ import { useBudgetStore } from '../../store/budgetStore'
 import SpreadsheetGrid from './SpreadsheetGrid'
 import BudgetSummary from './BudgetSummary'
 import { exportToCSV } from '../../utils/csvExport'
+import { exportBudgetData, importBudgetData } from '../../utils/dataExport'
 
 const BudgetDashboard: React.FC = () => {
   const {
@@ -13,6 +14,7 @@ const BudgetDashboard: React.FC = () => {
     deleteSheet,
     duplicateSheet,
     renameSheet,
+    importData,
   } = useBudgetStore()
 
   const activeSheet = sheets.find((s) => s.id === activeSheetId)
@@ -51,6 +53,19 @@ const BudgetDashboard: React.FC = () => {
     if (sheets.length > 1 && activeSheetId) {
       if (confirm('Delete this sheet? This cannot be undone.')) {
         deleteSheet(activeSheetId)
+      }
+    }
+  }
+
+  const handleExport = () => {
+    exportBudgetData(sheets, activeSheetId)
+  }
+
+  const handleImport = async () => {
+    const data = await importBudgetData()
+    if (data) {
+      if (confirm('This will replace ALL your budget sheets with the imported data. Continue?')) {
+        importData(data.sheets, data.activeSheetId)
       }
     }
   }
@@ -126,6 +141,18 @@ const BudgetDashboard: React.FC = () => {
               📥 Export CSV
             </button>
           )}
+          <button
+            className="btn btn-sm btn-secondary"
+            onClick={handleExport}
+          >
+            💾 Export Data
+          </button>
+          <button
+            className="btn btn-sm btn-secondary"
+            onClick={handleImport}
+          >
+            📂 Import Data
+          </button>
         </div>
       </div>
 

@@ -41,6 +41,7 @@ interface BudgetStore {
   setRowHighlight: (rowId: string, color: HighlightColor) => void
   toggleRowExcluded: (rowId: string) => void
   moveRow: (fromIndex: number, toIndex: number) => void
+  importData: (sheets: BudgetSheet[], activeSheetId: string) => void
 }
 
 const defaultSheet = createDefaultSheet()
@@ -197,6 +198,10 @@ export const useBudgetStore = create<BudgetStore>()(
             return { ...s, rows }
           }),
         }))
+      },
+
+      importData: (sheets: BudgetSheet[], activeSheetId: string) => {
+        set({ sheets, activeSheetId })
       },
     }),
     { name: 'budget-storage' }

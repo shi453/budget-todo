@@ -4,9 +4,11 @@ import TodoForm from './TodoForm'
 import TodoFilter from './TodoFilter'
 import TodoList from './TodoList'
 import type { TodoItem } from '../../types/todo'
+import { exportTodoData, importTodoData } from '../../utils/dataExport'
 
 const TodoDashboard: React.FC = () => {
   const { items, filterGroup, filterStatus, searchQuery } = useTodoStore()
+  const { groups, groupReminders, importData } = useTodoStore()
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
 
@@ -48,19 +50,46 @@ const TodoDashboard: React.FC = () => {
     ? items.find((i) => i.id === editingId) || null
     : null
 
+  const handleExport = () => {
+    exportTodoData(items, groups, groupReminders)
+  }
+
+  const handleImport = async () => {
+    const data = await importTodoData()
+    if (data) {
+      if (confirm('This will replace ALL your todo data with the imported data. Continue?')) {
+        importData(data.items, data.groups, data.groupReminders)
+      }
+    }
+  }
+
   return (
     <div className="todo-dashboard">
       <div className="todo-header">
         <h2>📝 Todo List</h2>
-        <button
-          className="btn btn-primary"
-          onClick={() => {
-            setEditingId(null)
-            setShowForm(true)
-          }}
-        >
-          + Add Task
-        </button>
+        <div className="todo-header-actions">
+          <button
+            className="btn btn-sm btn-secondary"
+            onClick={handleExport}
+          >
+            💾 Export
+          </button>
+          <button
+            className="btn btn-sm btn-secondary"
+            onClick={handleImport}
+          >
+            📂 Import
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              setEditingId(null)
+              setShowForm(true)
+            }}
+          >
+            + Add Task
+          </button>
+        </div>
       </div>
 
       <TodoFilter />
