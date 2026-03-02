@@ -6,10 +6,15 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2)
 }
 
+export interface GroupReminder {
+  enabled: boolean
+  time: string // HH:MM format — the daily reminder time for this group
+}
+
 interface TodoStore {
   items: TodoItem[]
   groups: string[]
-  groupReminders: Record<string, boolean>
+  groupReminders: Record<string, GroupReminder>
   filterGroup: string
   filterStatus: FilterStatus
   searchQuery: string
@@ -20,7 +25,7 @@ interface TodoStore {
   toggleComplete: (id: string) => void
   addGroup: (name: string) => void
   deleteGroup: (name: string) => void
-  toggleGroupReminder: (group: string) => void
+  setGroupReminder: (group: string, reminder: Partial<GroupReminder>) => void
   setFilterGroup: (group: string) => void
   setFilterStatus: (status: FilterStatus) => void
   setSearchQuery: (query: string) => void
@@ -31,7 +36,7 @@ export const useTodoStore = create<TodoStore>()(
     (set) => ({
       items: [],
       groups: ['General'],
-      groupReminders: { General: false },
+      groupReminders: { General: { enabled: false, time: '09:00' } },
       filterGroup: 'all',
       filterStatus: 'all' as FilterStatus,
       searchQuery: '',
@@ -72,7 +77,7 @@ export const useTodoStore = create<TodoStore>()(
             : [...state.groups, name],
           groupReminders: state.groups.includes(name)
             ? state.groupReminders
-            : { ...state.groupReminders, [name]: false },
+            : { ...state.groupReminders, [name]: { enabled: false, time: '09:00' } },
         }))
       },
 
@@ -90,11 +95,14 @@ export const useTodoStore = create<TodoStore>()(
         })
       },
 
-      toggleGroupReminder: (group) => {
+      setGroupReminder: (group, reminder) => {
         set((state) => ({
           groupReminders: {
             ...state.groupReminders,
-            [group]: !state.groupReminders[group],
+            [group]: {
+              ...(state.groupReminders[group] || { enabled: false, time: '09:00' }),
+              ...reminder,
+            },
           },
         }))
       },

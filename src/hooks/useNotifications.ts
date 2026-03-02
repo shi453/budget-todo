@@ -1,31 +1,69 @@
 import { useEffect, useRef } from 'react'
 import { useTodoStore } from '../store/todoStore'
 
-// Request notification permission
-export function requestNotificationPermission(): Promise<NotificationPermission> {
-  if (!('Notification' in window)) {
-    console.warn('This browser does not support notifications')
-    return Promise.resolve('denied' as NotificationPermission)
+let swRegistration: ServiceWorkerRegistration | null = null
+
+// Register the service worker (needed for PWA notifications on home screen)
+export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+  if (!('serviceWorker' in navigator)) return null
+  try {
+    const reg = await navigator.serviceWorker.register('/budget-todo/sw.js')
+    swRegistration = reg
+    return reg
+  } catch (err) {
+    console.warn('Service worker registration failed:', err)
+    return null
   }
-  return Notification.requestPermission()
 }
 
-// Show a browser notification
-function showNotification(title: string, body: string) {
-  if (!('Notification' in window)) return
+// Request notification permission
+export async function requestNotificationPermission(): Promise<NotificationPermission> {
+  if (!('Notification' in window)) {
+    console.warn('This browser does not support notifications')
+    return 'denied'
+  }
+  const permission = await Notification.requestPermission()
+  // Ensure SW is registered when permission is granted
+  if (permission === 'granted' && !swRegistration) {
+    await registerServiceWorker()
+  }
+  return permission
+}
+
+// Show a notification via Service Worker (works in PWA standalone mode)
+async function showNotification(title: string, body: string) {
   if (Notification.permission !== 'granted') return
 
+  // Try service worker notification first (works in PWA)
+  try {
+    let reg = swRegistration
+    if (!reg) {
+      reg = await navigator.serviceWorker?.ready
+    }
+    if (reg) {
+      await reg.showNotification(title, {
+        body,
+        icon: '/budget-todo/icon-192.svg',
+        badge: '/budget-todo/icon-192.svg',
+        tag: `group-reminder-${title}`,
+        requireInteraction: true,
+      } as NotificationOptions)
+      return
+    }
+  } catch {
+    // fallback below
+  }
+
+  // Fallback: direct Notification (works in regular browser tabs)
   try {
     const n = new Notification(title, {
       body,
-      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⏰</text></svg>',
-      tag: body, // prevent duplicate notifications for same task
+      tag: `group-reminder-${title}`,
       requireInteraction: true,
     })
-    // Auto-close after 30 seconds
     setTimeout(() => n.close(), 30000)
   } catch {
-    // Service worker may be needed on some platforms - fallback ignored
+    // Notifications not available
   }
 }
 
@@ -44,52 +82,83 @@ function playAlarm() {
 
     oscillator.start()
 
-    // Two short beeps
+    // Three short beeps
     gain.gain.setValueAtTime(0.3, ctx.currentTime)
     gain.gain.setValueAtTime(0, ctx.currentTime + 0.15)
     gain.gain.setValueAtTime(0.3, ctx.currentTime + 0.3)
     gain.gain.setValueAtTime(0, ctx.currentTime + 0.45)
+    gain.gain.setValueAtTime(0.3, ctx.currentTime + 0.6)
+    gain.gain.setValueAtTime(0, ctx.currentTime + 0.75)
 
-    oscillator.stop(ctx.currentTime + 0.5)
+    oscillator.stop(ctx.currentTime + 0.8)
   } catch {
-    // Audio not available - silently ignore
+    // Audio not available
   }
 }
 
-// Hook: checks every 30s if any task is due and fires notification + alarm
+/**
+ * Hook: checks every 30s if a group reminder time has been reached.
+ * 
+ * Logic:
+ * - For each group with reminders enabled, check if current time matches the group's reminder time.
+ * - If it matches, gather all incomplete tasks in that group and fire ONE notification listing them.
+ * - The notification fires once per group per day (tracked by date+group key).
+ * - Task-level date/time is for display only — it does NOT trigger notifications.
+ */
 export function useTaskReminders() {
   const notifiedRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
+    // Register SW on mount
+    registerServiceWorker()
+
     const check = () => {
       const { items, groupReminders } = useTodoStore.getState()
       const now = new Date()
+      const todayStr = now.toISOString().split('T')[0]
+      const currentMinutes = now.getHours() * 60 + now.getMinutes()
 
-      items.forEach((item) => {
-        // Skip if: completed, no date/time, already notified, or group reminders off
-        if (item.completed) return
-        if (!item.date || !item.time) return
-        if (notifiedRef.current.has(item.id)) return
-        if (!groupReminders[item.group]) return
+      Object.entries(groupReminders).forEach(([group, reminder]) => {
+        if (!reminder || !reminder.enabled || !reminder.time) return
 
-        const [hours, minutes] = item.time.split(':')
-        const taskTime = new Date(item.date + 'T00:00:00')
-        taskTime.setHours(parseInt(hours), parseInt(minutes), 0, 0)
+        // Parse group reminder time
+        const [h, m] = reminder.time.split(':').map(Number)
+        const reminderMinutes = h * 60 + m
 
-        // Trigger if task is due within the next 60 seconds or just passed (within 2 min)
-        const diffMs = taskTime.getTime() - now.getTime()
-        if (diffMs <= 60000 && diffMs > -120000) {
-          notifiedRef.current.add(item.id)
+        // Already notified this group today?
+        const dayKey = `${group}::${todayStr}`
+        if (notifiedRef.current.has(dayKey)) return
+
+        // Fire if we're within a 2-minute window of the reminder time
+        const diff = currentMinutes - reminderMinutes
+        if (diff >= 0 && diff < 2) {
+          // Gather incomplete tasks in this group
+          const pendingTasks = items.filter(
+            (i) => i.group === group && !i.completed
+          )
+
+          if (pendingTasks.length === 0) return
+
+          notifiedRef.current.add(dayKey)
+
+          const taskNames = pendingTasks
+            .slice(0, 5)
+            .map((t) => `• ${t.title}`)
+            .join('\n')
+          const extra =
+            pendingTasks.length > 5
+              ? `\n...and ${pendingTasks.length - 5} more`
+              : ''
+
           showNotification(
-            `⏰ Reminder: ${item.group}`,
-            `${item.title} is due now!`
+            `⏰ ${group} — ${pendingTasks.length} pending task${pendingTasks.length > 1 ? 's' : ''}`,
+            `${taskNames}${extra}`
           )
           playAlarm()
         }
       })
     }
 
-    // Check immediately and then every 30 seconds
     check()
     const interval = setInterval(check, 30000)
     return () => clearInterval(interval)
