@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useThemeStore } from './store/themeStore'
+import { useTaskReminders } from './hooks/useNotifications'
 import Navbar from './components/common/Navbar'
 import BudgetDashboard from './components/budget/BudgetDashboard'
 import TodoDashboard from './components/todo/TodoDashboard'
@@ -13,6 +14,9 @@ function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
+
+  // Activate task reminder checking
+  useTaskReminders()
 
   return (
     <div className="app">

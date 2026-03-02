@@ -9,6 +9,7 @@ function generateId(): string {
 interface TodoStore {
   items: TodoItem[]
   groups: string[]
+  groupReminders: Record<string, boolean>
   filterGroup: string
   filterStatus: FilterStatus
   searchQuery: string
@@ -19,6 +20,7 @@ interface TodoStore {
   toggleComplete: (id: string) => void
   addGroup: (name: string) => void
   deleteGroup: (name: string) => void
+  toggleGroupReminder: (group: string) => void
   setFilterGroup: (group: string) => void
   setFilterStatus: (status: FilterStatus) => void
   setSearchQuery: (query: string) => void
@@ -29,6 +31,7 @@ export const useTodoStore = create<TodoStore>()(
     (set) => ({
       items: [],
       groups: ['General'],
+      groupReminders: { General: false },
       filterGroup: 'all',
       filterStatus: 'all' as FilterStatus,
       searchQuery: '',
@@ -67,16 +70,32 @@ export const useTodoStore = create<TodoStore>()(
           groups: state.groups.includes(name)
             ? state.groups
             : [...state.groups, name],
+          groupReminders: state.groups.includes(name)
+            ? state.groupReminders
+            : { ...state.groupReminders, [name]: false },
         }))
       },
 
       deleteGroup: (name) => {
         if (name === 'General') return
+        set((state) => {
+          const { [name]: _, ...remainingReminders } = state.groupReminders
+          return {
+            groups: state.groups.filter((g) => g !== name),
+            groupReminders: remainingReminders,
+            items: state.items.map((i) =>
+              i.group === name ? { ...i, group: 'General' } : i
+            ),
+          }
+        })
+      },
+
+      toggleGroupReminder: (group) => {
         set((state) => ({
-          groups: state.groups.filter((g) => g !== name),
-          items: state.items.map((i) =>
-            i.group === name ? { ...i, group: 'General' } : i
-          ),
+          groupReminders: {
+            ...state.groupReminders,
+            [group]: !state.groupReminders[group],
+          },
         }))
       },
 
