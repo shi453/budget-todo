@@ -34,7 +34,7 @@ interface TodoStore {
   setFilterGroup: (group: string) => void
   setFilterStatus: (status: FilterStatus) => void
   setSearchQuery: (query: string) => void
-  importData: (items: TodoItem[], groups: string[], groupReminders: Record<string, GroupReminder>) => void
+  importData: (newItems: TodoItem[], newGroups: string[], newReminders: Record<string, GroupReminder>) => void
 }
 
 export const useTodoStore = create<TodoStore>()(
@@ -148,8 +148,25 @@ export const useTodoStore = create<TodoStore>()(
       setFilterStatus: (status) => set({ filterStatus: status }),
       setSearchQuery: (query) => set({ searchQuery: query }),
 
-      importData: (items, groups, groupReminders) => {
-        set({ items, groups, groupReminders })
+      importData: (newItems, newGroups, newReminders) => {
+        set((state) => {
+          // Merge groups (deduplicate)
+          const mergedGroups = [...new Set([...state.groups, ...newGroups])]
+          // Merge reminders (imported reminders only fill in for groups that don't already have one)
+          const mergedReminders = { ...state.groupReminders }
+          for (const g of newGroups) {
+            if (!mergedReminders[g] && newReminders[g]) {
+              mergedReminders[g] = newReminders[g]
+            } else if (!mergedReminders[g]) {
+              mergedReminders[g] = { enabled: false, date: '', time: '09:00' }
+            }
+          }
+          return {
+            items: [...state.items, ...newItems],
+            groups: mergedGroups,
+            groupReminders: mergedReminders,
+          }
+        })
       },
     }),
     { name: 'todo-storage' }

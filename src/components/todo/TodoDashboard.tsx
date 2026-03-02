@@ -57,7 +57,8 @@ const TodoDashboard: React.FC = () => {
   const handleImport = async () => {
     const data = await importTodoData()
     if (data) {
-      if (confirm('This will replace ALL your todo data with the imported data. Continue?')) {
+      const count = data.items.length
+      if (confirm(`Import ${count} task${count > 1 ? 's' : ''}? They will be added alongside your existing tasks.`)) {
         importData(data.items, data.groups, data.groupReminders)
       }
     }

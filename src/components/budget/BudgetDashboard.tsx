@@ -14,7 +14,7 @@ const BudgetDashboard: React.FC = () => {
     deleteSheet,
     duplicateSheet,
     renameSheet,
-    importData,
+    importSheets,
   } = useBudgetStore()
 
   const activeSheet = sheets.find((s) => s.id === activeSheetId)
@@ -58,14 +58,15 @@ const BudgetDashboard: React.FC = () => {
   }
 
   const handleExport = () => {
-    exportBudgetData(sheets, activeSheetId)
+    exportBudgetData(sheets)
   }
 
   const handleImport = async () => {
-    const data = await importBudgetData()
-    if (data) {
-      if (confirm('This will replace ALL your budget sheets with the imported data. Continue?')) {
-        importData(data.sheets, data.activeSheetId)
+    const newSheets = await importBudgetData()
+    if (newSheets) {
+      const count = newSheets.length
+      if (confirm(`Import ${count} sheet${count > 1 ? 's' : ''}? They will be added alongside your existing sheets.`)) {
+        importSheets(newSheets)
       }
     }
   }
