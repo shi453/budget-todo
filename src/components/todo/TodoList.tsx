@@ -24,10 +24,31 @@ function getDateLabel(dateStr: string): string {
   return `📅 ${formatDate(dateStr)}`
 }
 
+const SNOOZE_OPTIONS = [
+  { label: '5 min', minutes: 5 },
+  { label: '15 min', minutes: 15 },
+  { label: '30 min', minutes: 30 },
+  { label: '1 hr', minutes: 60 },
+]
+
 const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
-  const { deleteGroup, groupReminders, setGroupReminder } = useTodoStore()
-  const reminder = groupReminders[group] || { enabled: false, time: '09:00' }
+  const { deleteGroup, groupReminders, setGroupReminder, snoozeGroupReminder, dismissGroupReminder } = useTodoStore()
+  const reminder = groupReminders[group] || { enabled: false, date: '', time: '09:00' }
   const [showReminderSettings, setShowReminderSettings] = useState(false)
+
+  // Determine if reminder has fired (time has passed, not snoozed, not dismissed)
+  const isReminderFired = (() => {
+    if (!reminder.enabled || !reminder.date || !reminder.time || reminder.dismissed) return false
+    const target = new Date(`${reminder.date}T${reminder.time}:00`)
+    if (isNaN(target.getTime())) return false
+    const now = new Date()
+
+    if (reminder.snoozedUntil) {
+      const snoozeEnd = new Date(reminder.snoozedUntil)
+      return now >= snoozeEnd
+    }
+    return now >= target
+  })()
 
   const handleToggleReminder = async () => {
     if (!reminder.enabled) {
@@ -37,11 +58,27 @@ const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
         return
       }
     }
-    setGroupReminder(group, { enabled: !reminder.enabled })
+    setGroupReminder(group, {
+      enabled: !reminder.enabled,
+      dismissed: false,
+      snoozedUntil: undefined,
+    })
+  }
+
+  const handleDateChange = (date: string) => {
+    setGroupReminder(group, { date })
   }
 
   const handleTimeChange = (time: string) => {
     setGroupReminder(group, { time })
+  }
+
+  const handleSnooze = (minutes: number) => {
+    snoozeGroupReminder(group, minutes)
+  }
+
+  const handleDismiss = () => {
+    dismissGroupReminder(group)
   }
 
   // Sub-group items by date
@@ -69,7 +106,7 @@ const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
         <button
           className={`btn-icon reminder-toggle ${reminder.enabled ? 'reminder-on' : ''}`}
           onClick={() => setShowReminderSettings(!showReminderSettings)}
-          title={reminder.enabled ? `Reminder at ${formatTime(reminder.time)} — click to configure` : 'Set up daily reminder'}
+          title={reminder.enabled ? `Reminder set for ${reminder.date || 'no date'} at ${reminder.time} — click to configure` : 'Set reminder'}
         >
           {reminder.enabled ? '🔔' : '🔕'}
         </button>
@@ -96,7 +133,7 @@ const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
         <div className="reminder-panel">
           <div className="reminder-panel-row">
             <label className="reminder-switch-label">
-              <span>Daily reminder</span>
+              <span>Reminder</span>
               <button
                 className={`reminder-switch ${reminder.enabled ? 'on' : ''}`}
                 onClick={handleToggleReminder}
@@ -106,20 +143,64 @@ const TodoList: React.FC<TodoListProps> = ({ group, items, onEdit }) => {
             </label>
           </div>
           {reminder.enabled && (
-            <div className="reminder-panel-row">
-              <label className="reminder-time-label">
-                <span>⏰ Notify at:</span>
-                <input
-                  type="time"
-                  value={reminder.time}
-                  onChange={(e) => handleTimeChange(e.target.value)}
-                  className="reminder-time-input"
-                />
-              </label>
-              <span className="reminder-hint">
-                You'll get a notification with all pending tasks in "{group}" at this time daily.
-              </span>
-            </div>
+            <>
+              <div className="reminder-panel-row">
+                <label className="reminder-time-label">
+                  <span>📅 Date:</span>
+                  <input
+                    type="date"
+                    value={reminder.date || ''}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    className="reminder-date-input"
+                  />
+                </label>
+              </div>
+              <div className="reminder-panel-row">
+                <label className="reminder-time-label">
+                  <span>⏰ Time:</span>
+                  <input
+                    type="time"
+                    value={reminder.time}
+                    onChange={(e) => handleTimeChange(e.target.value)}
+                    className="reminder-time-input"
+                  />
+                </label>
+              </div>
+              {reminder.date && reminder.time && (
+                <div className="reminder-panel-row">
+                  <span className="reminder-hint">
+                    {reminder.dismissed
+                      ? '✅ Reminder was dismissed.'
+                      : reminder.snoozedUntil && new Date(reminder.snoozedUntil) > new Date()
+                        ? `💤 Snoozed until ${new Date(reminder.snoozedUntil).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                        : `Notification will fire on ${formatDate(reminder.date)} at ${formatTime(reminder.time)} for all pending tasks in "${group}".`}
+                  </span>
+                </div>
+              )}
+              {/* Snooze & Dismiss controls — visible when reminder has fired */}
+              {isReminderFired && !reminder.dismissed && (
+                <div className="reminder-panel-row snooze-row">
+                  <span className="snooze-label">🔔 Reminder fired!</span>
+                  <div className="snooze-buttons">
+                    {SNOOZE_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.minutes}
+                        className="btn btn-sm snooze-btn"
+                        onClick={() => handleSnooze(opt.minutes)}
+                      >
+                        💤 {opt.label}
+                      </button>
+                    ))}
+                    <button
+                      className="btn btn-sm dismiss-btn"
+                      onClick={handleDismiss}
+                    >
+                      ✅ Dismiss
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

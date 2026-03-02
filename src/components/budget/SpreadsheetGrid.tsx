@@ -20,7 +20,7 @@ const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
   sheet,
   searchQuery,
 }) => {
-  const { addRow, deleteRow, updateRow, setRowHighlight, moveRow } =
+  const { addRow, deleteRow, updateRow, setRowHighlight, toggleRowExcluded, moveRow } =
     useBudgetStore()
 
   const [editingCell, setEditingCell] = useState<{
@@ -107,9 +107,14 @@ const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
     setDragIndex(null)
   }
 
-  const getRowStyle = (color: HighlightColor): React.CSSProperties => {
-    if (color === 'none') return {}
-    return { backgroundColor: `var(--highlight-${color})` }
+  const getRowStyle = (color: HighlightColor, excluded?: boolean): React.CSSProperties => {
+    const style: React.CSSProperties = {}
+    if (color !== 'none') style.backgroundColor = `var(--highlight-${color})`
+    if (excluded) {
+      style.opacity = 0.5
+      style.textDecoration = 'line-through'
+    }
+    return style
   }
 
   const renderCell = (
@@ -158,6 +163,7 @@ const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
             <th className="col-expense">Expense Details</th>
             <th className="col-budget">Budget Planned (₹)</th>
             <th className="col-whatif">What-If (₹)</th>
+            <th className="col-exclude" title="Exclude from totals">⊘</th>
             <th className="col-actions">Actions</th>
           </tr>
         </thead>
@@ -165,12 +171,12 @@ const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
           {filteredRows.map((row, index) => (
             <tr
               key={row.id}
-              style={getRowStyle(row.highlightColor)}
+              style={getRowStyle(row.highlightColor, row.excluded)}
               draggable
               onDragStart={() => handleDragStart(index)}
               onDragOver={(e) => handleDragOver(e, index)}
               onDragEnd={handleDragEnd}
-              className={dragIndex === index ? 'dragging' : ''}
+              className={`${dragIndex === index ? 'dragging' : ''} ${row.excluded ? 'row-excluded' : ''}`}
             >
               <td className="col-drag">
                 <span className="drag-handle">⣿</span>
@@ -184,6 +190,15 @@ const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
               </td>
               <td className="col-whatif">
                 {renderCell(row.id, 'whatIf', row.whatIf, index)}
+              </td>
+              <td className="col-exclude">
+                <button
+                  className={`btn-icon exclude-toggle ${row.excluded ? 'excluded' : ''}`}
+                  onClick={() => toggleRowExcluded(row.id)}
+                  title={row.excluded ? 'Include in totals' : 'Exclude from totals'}
+                >
+                  {row.excluded ? '⊘' : '✓'}
+                </button>
               </td>
               <td className="col-actions">
                 <div className="row-actions">
@@ -234,14 +249,15 @@ const SpreadsheetGrid: React.FC<SpreadsheetGridProps> = ({
             <td className="totals-label">TOTAL</td>
             <td className="totals-value">
               {formatCurrency(
-                sheet.rows.reduce((sum, r) => sum + r.budgetPlanned, 0)
+                sheet.rows.filter((r) => !r.excluded).reduce((sum, r) => sum + r.budgetPlanned, 0)
               )}
             </td>
             <td className="totals-value">
               {formatCurrency(
-                sheet.rows.reduce((sum, r) => sum + r.whatIf, 0)
+                sheet.rows.filter((r) => !r.excluded).reduce((sum, r) => sum + r.whatIf, 0)
               )}
             </td>
+            <td></td>
             <td></td>
           </tr>
         </tfoot>

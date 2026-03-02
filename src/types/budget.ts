@@ -6,6 +6,7 @@ export interface BudgetRow {
   budgetPlanned: number
   whatIf: number
   highlightColor: HighlightColor
+  excluded?: boolean
 }
 
 export interface BudgetSheet {

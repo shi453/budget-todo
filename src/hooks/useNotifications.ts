@@ -97,13 +97,14 @@ function playAlarm() {
 }
 
 /**
- * Hook: checks every 30s if a group reminder time has been reached.
- * 
+ * Hook: checks every 30s if a group reminder should fire.
+ *
  * Logic:
- * - For each group with reminders enabled, check if current time matches the group's reminder time.
- * - If it matches, gather all incomplete tasks in that group and fire ONE notification listing them.
- * - The notification fires once per group per day (tracked by date+group key).
- * - Task-level date/time is for display only — it does NOT trigger notifications.
+ * - Each group has a specific date + time for its reminder.
+ * - If snoozedUntil is set and in the future, skip (snoozed).
+ * - If dismissed, skip.
+ * - Otherwise fire when current datetime >= reminder datetime.
+ * - After snooze expires, fire again.
  */
 export function useTaskReminders() {
   const notifiedRef = useRef<Set<string>>(new Set())
@@ -115,47 +116,47 @@ export function useTaskReminders() {
     const check = () => {
       const { items, groupReminders } = useTodoStore.getState()
       const now = new Date()
-      const todayStr = now.toISOString().split('T')[0]
-      const currentMinutes = now.getHours() * 60 + now.getMinutes()
 
       Object.entries(groupReminders).forEach(([group, reminder]) => {
-        if (!reminder || !reminder.enabled || !reminder.time) return
+        if (!reminder || !reminder.enabled || !reminder.date || !reminder.time) return
+        if (reminder.dismissed) return
 
-        // Parse group reminder time
-        const [h, m] = reminder.time.split(':').map(Number)
-        const reminderMinutes = h * 60 + m
+        // Build the target fire time
+        const targetStr = `${reminder.date}T${reminder.time}:00`
+        const targetDate = new Date(targetStr)
+        if (isNaN(targetDate.getTime())) return
 
-        // Already notified this group today?
-        const dayKey = `${group}::${todayStr}`
-        if (notifiedRef.current.has(dayKey)) return
+        // If snoozed and snooze hasn't expired yet, skip
+        if (reminder.snoozedUntil) {
+          const snoozeEnd = new Date(reminder.snoozedUntil)
+          if (now < snoozeEnd) return
+          // Snooze expired — fire again. Use snoozedUntil as the unique key so it doesn't double-fire.
+          const snoozeKey = `${group}::snooze::${reminder.snoozedUntil}`
+          if (notifiedRef.current.has(snoozeKey)) return
 
-        // Fire if we're within a 2-minute window of the reminder time
-        const diff = currentMinutes - reminderMinutes
-        if (diff >= 0 && diff < 2) {
-          // Gather incomplete tasks in this group
-          const pendingTasks = items.filter(
-            (i) => i.group === group && !i.completed
-          )
-
+          const pendingTasks = items.filter((i) => i.group === group && !i.completed)
           if (pendingTasks.length === 0) return
 
-          notifiedRef.current.add(dayKey)
-
-          const taskNames = pendingTasks
-            .slice(0, 5)
-            .map((t) => `• ${t.title}`)
-            .join('\n')
-          const extra =
-            pendingTasks.length > 5
-              ? `\n...and ${pendingTasks.length - 5} more`
-              : ''
-
-          showNotification(
-            `⏰ ${group} — ${pendingTasks.length} pending task${pendingTasks.length > 1 ? 's' : ''}`,
-            `${taskNames}${extra}`
-          )
-          playAlarm()
+          notifiedRef.current.add(snoozeKey)
+          fireGroupNotification(group, pendingTasks)
+          return
         }
+
+        // Normal (non-snoozed) check: has the target time been reached?
+        if (now < targetDate) return
+
+        // Only fire within a 5-minute window to avoid re-firing on old reminders
+        const diffMs = now.getTime() - targetDate.getTime()
+        if (diffMs > 5 * 60 * 1000) return
+
+        const dayKey = `${group}::${reminder.date}::${reminder.time}`
+        if (notifiedRef.current.has(dayKey)) return
+
+        const pendingTasks = items.filter((i) => i.group === group && !i.completed)
+        if (pendingTasks.length === 0) return
+
+        notifiedRef.current.add(dayKey)
+        fireGroupNotification(group, pendingTasks)
       })
     }
 
@@ -163,4 +164,21 @@ export function useTaskReminders() {
     const interval = setInterval(check, 30000)
     return () => clearInterval(interval)
   }, [])
+}
+
+function fireGroupNotification(group: string, pendingTasks: { title: string }[]) {
+  const taskNames = pendingTasks
+    .slice(0, 5)
+    .map((t) => `• ${t.title}`)
+    .join('\n')
+  const extra =
+    pendingTasks.length > 5
+      ? `\n...and ${pendingTasks.length - 5} more`
+      : ''
+
+  showNotification(
+    `⏰ ${group} — ${pendingTasks.length} pending task${pendingTasks.length > 1 ? 's' : ''}`,
+    `${taskNames}${extra}`
+  )
+  playAlarm()
 }

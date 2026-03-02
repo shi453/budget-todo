@@ -365,6 +365,60 @@
   line-height: 1.3;
 }
 
+.reminder-date-input {
+  padding: 0.3rem 0.5rem !important;
+  font-size: 0.85rem !important;
+  max-width: 160px;
+}
+
+/* Snooze & Dismiss controls */
+.snooze-row {
+  background: #fef3c7;
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.25rem;
+}
+[data-theme='dark'] .snooze-row {
+  background: #422006;
+}
+
+.snooze-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.snooze-buttons {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-top: 0.35rem;
+}
+
+.snooze-btn {
+  background: var(--accent) !important;
+  color: white !important;
+  font-size: 0.72rem !important;
+  padding: 0.25rem 0.5rem !important;
+  border-radius: var(--radius-sm) !important;
+}
+.snooze-btn:hover {
+  opacity: 0.85;
+}
+
+.dismiss-btn {
+  background: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+  font-size: 0.72rem !important;
+  padding: 0.25rem 0.5rem !important;
+  border-radius: var(--radius-sm) !important;
+  border: 1px solid var(--border-color) !important;
+}
+.dismiss-btn:hover {
+  background: var(--success) !important;
+  color: white !important;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
   .navbar {

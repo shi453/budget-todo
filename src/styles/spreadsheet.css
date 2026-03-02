@@ -139,6 +139,10 @@
 .col-actions {
   width: 80px;
 }
+.col-exclude {
+  width: 40px;
+  text-align: center;
+}
 
 /* Cell Display & Edit */
 .cell-display {
@@ -240,4 +244,38 @@
 .add-row-btn {
   margin-top: 0.75rem;
   width: 100%;
+}
+
+/* Exclude Toggle */
+.exclude-toggle {
+  font-size: 0.85rem !important;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  padding: 0 !important;
+  transition: all 0.2s;
+}
+.exclude-toggle.excluded {
+  background: var(--danger) !important;
+  color: white !important;
+  border-color: var(--danger) !important;
+}
+.exclude-toggle:not(.excluded) {
+  background: var(--success) !important;
+  color: white !important;
+  border-color: var(--success) !important;
+  opacity: 0.5;
+}
+.exclude-toggle:not(.excluded):hover {
+  opacity: 1;
+}
+
+/* Excluded row styling */
+.row-excluded td .cell-display,
+.row-excluded td .cell-number {
+  text-decoration: line-through;
+  color: var(--text-secondary);
 }

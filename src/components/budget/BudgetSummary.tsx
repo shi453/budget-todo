@@ -7,9 +7,11 @@ interface BudgetSummaryProps {
 }
 
 const BudgetSummary: React.FC<BudgetSummaryProps> = ({ sheet }) => {
-  const totalBudget = sheet.rows.reduce((sum, r) => sum + r.budgetPlanned, 0)
-  const totalWhatIf = sheet.rows.reduce((sum, r) => sum + r.whatIf, 0)
+  const includedRows = sheet.rows.filter((r) => !r.excluded)
+  const totalBudget = includedRows.reduce((sum, r) => sum + r.budgetPlanned, 0)
+  const totalWhatIf = includedRows.reduce((sum, r) => sum + r.whatIf, 0)
   const difference = totalBudget - totalWhatIf
+  const excludedCount = sheet.rows.length - includedRows.length
 
   return (
     <div className="summary-bar">
@@ -34,7 +36,14 @@ const BudgetSummary: React.FC<BudgetSummaryProps> = ({ sheet }) => {
       </div>
       <div className="summary-item">
         <div className="summary-label">Items</div>
-        <div className="summary-value">{sheet.rows.length}</div>
+        <div className="summary-value">
+          {includedRows.length}
+          {excludedCount > 0 && (
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginLeft: '0.25rem' }}>
+              ({excludedCount} excl.)
+            </span>
+          )}
+        </div>
       </div>
     </div>
   )

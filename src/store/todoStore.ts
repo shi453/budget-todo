@@ -8,7 +8,10 @@ function generateId(): string {
 
 export interface GroupReminder {
   enabled: boolean
-  time: string // HH:MM format — the daily reminder time for this group
+  date: string   // YYYY-MM-DD — the specific date for the reminder
+  time: string   // HH:MM — the time on that date
+  snoozedUntil?: string  // ISO datetime — if set & in future, reminder is snoozed until then
+  dismissed?: boolean     // if true, reminder won't fire again (user dismissed it)
 }
 
 interface TodoStore {
@@ -26,6 +29,8 @@ interface TodoStore {
   addGroup: (name: string) => void
   deleteGroup: (name: string) => void
   setGroupReminder: (group: string, reminder: Partial<GroupReminder>) => void
+  snoozeGroupReminder: (group: string, minutes: number) => void
+  dismissGroupReminder: (group: string) => void
   setFilterGroup: (group: string) => void
   setFilterStatus: (status: FilterStatus) => void
   setSearchQuery: (query: string) => void
@@ -36,7 +41,7 @@ export const useTodoStore = create<TodoStore>()(
     (set) => ({
       items: [],
       groups: ['General'],
-      groupReminders: { General: { enabled: false, time: '09:00' } },
+      groupReminders: { General: { enabled: false, date: '', time: '09:00' } },
       filterGroup: 'all',
       filterStatus: 'all' as FilterStatus,
       searchQuery: '',
@@ -77,7 +82,7 @@ export const useTodoStore = create<TodoStore>()(
             : [...state.groups, name],
           groupReminders: state.groups.includes(name)
             ? state.groupReminders
-            : { ...state.groupReminders, [name]: { enabled: false, time: '09:00' } },
+            : { ...state.groupReminders, [name]: { enabled: false, date: '', time: '09:00' } },
         }))
       },
 
@@ -100,8 +105,39 @@ export const useTodoStore = create<TodoStore>()(
           groupReminders: {
             ...state.groupReminders,
             [group]: {
-              ...(state.groupReminders[group] || { enabled: false, time: '09:00' }),
+              ...(state.groupReminders[group] || { enabled: false, date: '', time: '09:00' }),
               ...reminder,
+              // When user changes date or time, clear dismissed + snooze so it can fire fresh
+              ...(reminder.date !== undefined || reminder.time !== undefined
+                ? { dismissed: false, snoozedUntil: undefined }
+                : {}),
+            },
+          },
+        }))
+      },
+
+      snoozeGroupReminder: (group, minutes) => {
+        const until = new Date(Date.now() + minutes * 60 * 1000).toISOString()
+        set((state) => ({
+          groupReminders: {
+            ...state.groupReminders,
+            [group]: {
+              ...(state.groupReminders[group] || { enabled: false, date: '', time: '09:00' }),
+              snoozedUntil: until,
+              dismissed: false,
+            },
+          },
+        }))
+      },
+
+      dismissGroupReminder: (group) => {
+        set((state) => ({
+          groupReminders: {
+            ...state.groupReminders,
+            [group]: {
+              ...(state.groupReminders[group] || { enabled: false, date: '', time: '09:00' }),
+              dismissed: true,
+              snoozedUntil: undefined,
             },
           },
         }))

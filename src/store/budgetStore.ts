@@ -39,6 +39,7 @@ interface BudgetStore {
   deleteRow: (rowId: string) => void
   updateRow: (rowId: string, updates: Partial<BudgetRow>) => void
   setRowHighlight: (rowId: string, color: HighlightColor) => void
+  toggleRowExcluded: (rowId: string) => void
   moveRow: (fromIndex: number, toIndex: number) => void
 }
 
@@ -162,6 +163,22 @@ export const useBudgetStore = create<BudgetStore>()(
                   ...s,
                   rows: s.rows.map((r) =>
                     r.id === rowId ? { ...r, highlightColor: color } : r
+                  ),
+                }
+              : s
+          ),
+        }))
+      },
+
+      toggleRowExcluded: (rowId: string) => {
+        const { activeSheetId } = get()
+        set((state) => ({
+          sheets: state.sheets.map((s) =>
+            s.id === activeSheetId
+              ? {
+                  ...s,
+                  rows: s.rows.map((r) =>
+                    r.id === rowId ? { ...r, excluded: !r.excluded } : r
                   ),
                 }
               : s
