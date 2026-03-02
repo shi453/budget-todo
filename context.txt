@@ -1,0 +1,371 @@
+================================================================================
+                    BUDGET & TODO TRACKER — PROJECT CONTEXT
+================================================================================
+Last updated: March 2, 2026
+
+This document captures the full context gathered during the design, development,
+and iterative enhancement of the Budget & Todo Tracker web application.
+
+────────────────────────────────────────────────────────────────────────────────
+1. PROJECT OVERVIEW
+────────────────────────────────────────────────────────────────────────────────
+
+Application Name : Budget & Todo Tracker
+Live URL         : https://shi453.github.io/budget-todo/
+Repository       : https://github.com/shi453/budget-todo
+Type             : Single-page Progressive Web Application (PWA)
+Purpose          : A personal productivity tool that combines a budget/expense
+                   tracking spreadsheet with a full-featured task manager, all
+                   running entirely in the browser with no backend server.
+
+The tool was built incrementally over multiple sessions, starting as a basic
+budget tracker and evolving into a polished, production-quality application
+with rich features including reminders, notifications, data import/export,
+custom alarm tones, and a modern icon-based UI.
+
+────────────────────────────────────────────────────────────────────────────────
+2. TECHNOLOGY STACK
+────────────────────────────────────────────────────────────────────────────────
+
+Frontend Framework : React 18.2 with TypeScript 5.3
+Build Tool         : Vite 5.1
+State Management   : Zustand 4.5 with persist middleware (localStorage)
+Icons              : Lucide React (replaced all emoji-based icons)
+Styling            : Plain CSS with CSS custom properties (no framework)
+PWA                : manifest.json + Service Worker (sw.js)
+Deployment         : GitHub Pages via peaceiris/actions-gh-pages@v4
+CI/CD              : GitHub Actions — auto-builds and deploys on push to main
+Currency Format    : Indian Rupees (INR) — en-IN locale
+Date Format        : en-IN locale (DD Mon YYYY)
+
+No backend, no database. All data persists in the browser's localStorage via
+Zustand persist middleware. Each store uses a named storage key:
+  - "budget-storage"   → Budget sheets and rows
+  - "todo-storage"     → Todo items, groups, group reminders
+  - "theme-storage"    → Light/dark theme preference
+  - "ringtone-storage" → Alarm tone preference and custom uploads
+
+────────────────────────────────────────────────────────────────────────────────
+3. APPLICATION STRUCTURE
+────────────────────────────────────────────────────────────────────────────────
+
+The app is a two-tab SPA. The user switches between "Budget" and "Todo" tabs
+via the top navigation bar.
+
+3.1 — Budget Tracker Tab
+  • Spreadsheet-like grid for tracking expenses.
+  • Each row has: Expense Details (text), Budget Planned (number), What-If (number).
+  • Rows can be color-highlighted (none, red, green, yellow, orange).
+  • Rows can be excluded from totals (toggle include/exclude per row).
+  • Rows are reorderable via drag handle.
+  • Summary bar at top shows: Total Budget (green), What-If Total (orange),
+    Difference (pink), and item count (with excluded count shown separately).
+  • Multiple sheets supported — add, rename, duplicate, delete sheets.
+  • Search/filter rows within a sheet.
+  • Export individual sheet to CSV.
+  • Export/Import all budget data as JSON (ID-stripped, merge-based import).
+
+3.2 — Todo List Tab
+  • Tasks have: title, group, date, time, priority (high/medium/low),
+    completion status, notes, and creation timestamp.
+  • Tasks are organized into groups (with a default "General" group).
+  • Groups can be created, deleted (tasks moved to General), and collapsed.
+  • Each group can have a reminder set for a specific date + time.
+  • Reminders trigger PWA notifications and play an alarm sound.
+  • Reminders can be snoozed (15min, 30min, 1hr, 2hr, 3hr, 4hr, 5hr) or dismissed.
+  • Tasks displayed sorted by date, then priority, then creation time.
+  • Filter by: group, status (all/active/completed), and text search.
+  • Inline notes editor — always-visible toggle button per task, expandable
+    panel with click-to-edit, auto-resizing textarea, Ctrl+Enter to save.
+  • Export/Import all todo data as JSON (ID-stripped, merge-based import).
+
+3.3 — Global Features
+  • Dark mode / Light mode toggle (persisted).
+  • Custom notification ringtone settings:
+    - 5 preset tones using Web Audio API (Classic Beeps, Gentle Chime,
+      Urgent Alarm, Wind Chime, Soft Pulse).
+    - Custom audio upload (base64 stored in localStorage, 500KB max).
+    - Preview/play functionality before selecting.
+  • Toast notification system replacing all native browser alert()/confirm().
+  • Custom confirm dialog modal with danger/primary variants.
+  • Backdrop blur on all modal overlays.
+  • Full JSON export/import for the entire app (budget + todo combined).
+
+────────────────────────────────────────────────────────────────────────────────
+4. DATA MODELS
+────────────────────────────────────────────────────────────────────────────────
+
+4.1 — Budget Types
+
+  HighlightColor = 'none' | 'red' | 'green' | 'yellow' | 'orange'
+
+  BudgetRow {
+    id: string
+    expenseDetails: string
+    budgetPlanned: number
+    whatIf: number
+    highlightColor: HighlightColor
+    excluded?: boolean
+  }
+
+  BudgetSheet {
+    id: string
+    name: string
+    rows: BudgetRow[]
+    createdAt: string (ISO)
+  }
+
+4.2 — Todo Types
+
+  Priority = 'high' | 'medium' | 'low'
+  FilterStatus = 'all' | 'active' | 'completed'
+
+  TodoItem {
+    id: string
+    title: string
+    group: string
+    date: string (YYYY-MM-DD)
+    time: string (HH:MM)
+    completed: boolean
+    priority: Priority
+    notes?: string
+    createdAt: string (ISO)
+  }
+
+  GroupReminder {
+    enabled: boolean
+    date: string (YYYY-MM-DD)
+    time: string (HH:MM)
+    snoozedUntil?: string (ISO datetime)
+    dismissed?: boolean
+  }
+
+4.3 — Toast Types
+
+  ToastType = 'success' | 'error' | 'warning' | 'info'
+  
+  Toast {
+    id: string
+    message: string
+    type: ToastType
+    duration: number (ms)
+  }
+
+  Auto-dismiss durations: success/info=3500ms, warning=4000ms, error=5000ms
+
+4.4 — Ringtone Types
+
+  PresetTone = 'classic' | 'gentle' | 'urgent' | 'chime' | 'pulse'
+
+  RingtoneStore includes:
+    selectedPreset: PresetTone
+    customAudioData: string | null (base64 data URL)
+    customAudioName: string | null
+    useCustom: boolean
+
+────────────────────────────────────────────────────────────────────────────────
+5. ZUSTAND STORES
+────────────────────────────────────────────────────────────────────────────────
+
+5.1 — budgetStore (budget-storage)
+  State : sheets[], activeSheetId
+  Actions: addSheet, deleteSheet, duplicateSheet, renameSheet, setActiveSheet,
+           addRow, deleteRow, updateRow, setRowHighlight, toggleRowExcluded,
+           moveRow, importSheets
+
+5.2 — todoStore (todo-storage)
+  State : items[], groups[], groupReminders{}, filterGroup, filterStatus,
+          searchQuery
+  Actions: addItem, deleteItem, updateItem, toggleComplete, addGroup,
+           deleteGroup, setGroupReminder, snoozeGroupReminder,
+           dismissGroupReminder, setFilterGroup, setFilterStatus,
+           setSearchQuery, importData
+
+5.3 — themeStore (theme-storage)
+  State : theme ('light' | 'dark')
+  Actions: toggleTheme
+
+5.4 — ringtoneStore (ringtone-storage)
+  State : selectedPreset, customAudioData, customAudioName, useCustom
+  Actions: setPreset, setCustomAudio, clearCustomAudio, setUseCustom
+  Also exports: playSelectedAlarm() — plays the chosen tone
+
+5.5 — toastStore (no persistence)
+  State : toasts[]
+  Actions: addToast, removeToast
+  Shorthand: toast.success(), toast.error(), toast.warning(), toast.info()
+
+────────────────────────────────────────────────────────────────────────────────
+6. FILE STRUCTURE
+────────────────────────────────────────────────────────────────────────────────
+
+budget-todo-app/
+├── .github/workflows/deploy.yml    ← CI/CD pipeline for GitHub Pages
+├── index.html                       ← Vite entry HTML
+├── package.json                     ← Dependencies and scripts
+├── vite.config.ts                   ← Vite config (base: '/budget-todo/')
+├── tsconfig.json                    ← TypeScript config
+├── public/
+│   ├── manifest.json                ← PWA manifest
+│   ├── icon-192.svg                 ← App icon
+│   └── sw.js                        ← Service Worker for notifications
+└── src/
+    ├── main.tsx                     ← App entry point
+    ├── App.tsx                      ← Root component (tab router + reminders)
+    ├── types/
+    │   ├── budget.ts                ← BudgetRow, BudgetSheet, HighlightColor
+    │   └── todo.ts                  ← TodoItem, Priority, FilterStatus
+    ├── store/
+    │   ├── budgetStore.ts           ← Budget state management
+    │   ├── todoStore.ts             ← Todo state management
+    │   ├── themeStore.ts            ← Theme state (light/dark)
+    │   ├── ringtoneStore.ts         ← Alarm tone selection + Web Audio players
+    │   └── toastStore.ts            ← Toast notification system
+    ├── hooks/
+    │   └── useNotifications.ts      ← Reminder check loop + PWA notifications
+    ├── utils/
+    │   ├── csvExport.ts             ← Export budget sheet to CSV
+    │   ├── dataExport.ts            ← JSON export/import (full/budget/todo)
+    │   ├── formatCurrency.ts        ← INR currency formatter
+    │   └── dateHelpers.ts           ← Date formatting, isOverdue, isToday
+    ├── components/
+    │   ├── common/
+    │   │   ├── Navbar.tsx           ← Top nav with tabs, theme toggle, settings
+    │   │   ├── RingtoneSettings.tsx ← Modal for alarm tone configuration
+    │   │   ├── ConfirmDialog.tsx    ← Custom confirm dialog (replaces native)
+    │   │   └── ToastContainer.tsx   ← Toast notification renderer
+    │   ├── budget/
+    │   │   ├── BudgetDashboard.tsx  ← Sheet tabs, search, CSV export, JSON I/O
+    │   │   ├── BudgetSummary.tsx    ← Color-coded summary bar (green/orange/pink)
+    │   │   └── SpreadsheetGrid.tsx  ← Editable grid with highlights, drag, exclude
+    │   └── todo/
+    │       ├── TodoDashboard.tsx    ← Group management, JSON I/O, task form toggle
+    │       ├── TodoForm.tsx         ← Add/edit task form
+    │       ├── TodoFilter.tsx       ← Group, status, and search filters
+    │       ├── TodoList.tsx         ← Group cards with reminders, snooze, items
+    │       └── TodoItem.tsx         ← Task card with inline notes editor
+    └── styles/
+        ├── global.css               ← Theme variables, layout, component styles
+        ├── responsive.css           ← Media queries, component-specific styles
+        └── spreadsheet.css          ← Spreadsheet grid-specific styles
+
+────────────────────────────────────────────────────────────────────────────────
+7. EXPORT/IMPORT DESIGN
+────────────────────────────────────────────────────────────────────────────────
+
+The JSON export/import system follows these principles:
+
+• Export: Strips all internal IDs — only raw data is saved.
+• Import: Generates fresh IDs and ADDS data alongside existing data.
+  - Budget: Imported sheets are added as new sheets.
+  - Todo: Imported tasks are appended; groups are deduplicated; reminders
+    for new groups are merged in (existing group reminders are preserved).
+• Three export modes: 'budget' only, 'todo' only, or 'full' (both).
+• File format: JSON with version number (v1) and type identifier.
+• User is prompted with a confirm dialog before importing (replaces native).
+• Success/failure feedback via toast notifications (replaces native alerts).
+
+────────────────────────────────────────────────────────────────────────────────
+8. NOTIFICATION & REMINDER SYSTEM
+────────────────────────────────────────────────────────────────────────────────
+
+• Each group has an optional reminder with a specific date and time.
+• A polling loop (useTaskReminders hook) checks every 30 seconds.
+• When a reminder fires:
+  1. PWA notification is shown (via Service Worker if available, else fallback).
+  2. The selected alarm tone is played (Web Audio preset or custom upload).
+  3. The notification lists up to 5 pending (incomplete) tasks in the group.
+• Reminder states: enabled → fired → snoozed (for N minutes) → fired again,
+  or fired → dismissed (won't fire again).
+• Snooze options: 15min, 30min, 1hr, 2hr, 3hr, 4hr, 5hr.
+• The notified-set is tracked in a ref to prevent double-firing within the
+  same browser session.
+
+────────────────────────────────────────────────────────────────────────────────
+9. UI/UX DESIGN DECISIONS
+────────────────────────────────────────────────────────────────────────────────
+
+• All icons use Lucide React for consistent cross-platform rendering (replaced
+  all emoji which rendered differently across OS/browsers).
+• Native browser confirm() and alert() replaced with:
+  - ConfirmDialog component (modal with backdrop blur, danger/primary variants)
+  - Toast notification system (success/error/warning/info with auto-dismiss)
+• Color-coded budget summary values:
+  - Total Budget → green (--color-budget: #16a34a / #4ade80 dark)
+  - What-If Total → orange (--color-whatif: #ea580c / #fb923c dark)
+  - Difference → pink (--color-diff: #db2777 / #f472b6 dark)
+• Dark mode fully supported with CSS custom properties.
+• Inline notes editor with:
+  - Always-visible toggle button (even when no notes exist)
+  - Expandable slide-down panel with accent-colored left border
+  - Click-to-edit behavior with auto-resizing textarea
+  - Ctrl+Enter to save, Escape or Cancel to discard
+  - Pencil edit hint on hover
+• Spreadsheet rows support drag-and-drop reordering.
+• Priority indicators use colored dots (● High/Medium/Low) instead of emoji.
+• Responsive design with mobile-friendly CSS.
+
+────────────────────────────────────────────────────────────────────────────────
+10. DEPLOYMENT PIPELINE
+────────────────────────────────────────────────────────────────────────────────
+
+1. Developer pushes to 'main' branch on GitHub.
+2. GitHub Actions workflow (.github/workflows/deploy.yml) triggers:
+   a. Checks out code
+   b. Sets up Node.js 20 with npm cache
+   c. Runs `npm ci` (clean install)
+   d. Runs `npm run build` (tsc + vite build)
+   e. Deploys dist/ folder to gh-pages branch via peaceiris/actions-gh-pages@v4
+3. GitHub Pages serves the app from the gh-pages branch at:
+   https://shi453.github.io/budget-todo/
+
+────────────────────────────────────────────────────────────────────────────────
+11. DEVELOPMENT EVOLUTION (CHRONOLOGICAL)
+────────────────────────────────────────────────────────────────────────────────
+
+Session 1 — Initial Build
+  • Basic React + TypeScript + Vite + Zustand scaffold.
+  • Budget tracker with spreadsheet grid.
+  • Todo list with groups, priorities, dates.
+  • Deployed to GitHub Pages.
+
+Session 2 — Feature Additions
+  • Group-based reminders with PWA notifications.
+  • Date + time picker for reminders.
+  • Snooze functionality (expanded to 7 options).
+  • Row color highlighting.
+  • Row exclude/include toggle for budget.
+  • Collapsible groups in todo list.
+
+Session 3 — Data & Personalization
+  • JSON export/import (ID-stripped, merge-based).
+  • CSV export for budget sheets.
+  • Custom notification ringtone selection (5 presets + upload).
+  • Notes on todo tasks.
+
+Session 4 — Production UI Overhaul
+  • Lucide React icon library (replaced all emoji).
+  • Toast notification system (replaced all alert() calls).
+  • Custom ConfirmDialog component (replaced all confirm() calls).
+  • Backdrop blur on modal overlays.
+  • Color-coded summary values (green/orange/pink).
+  • Redesigned inline notes editor (expandable panel, click-to-edit).
+
+────────────────────────────────────────────────────────────────────────────────
+12. KEY CONSTRAINTS & DECISIONS
+────────────────────────────────────────────────────────────────────────────────
+
+• No backend server — everything runs client-side.
+• No database — localStorage via Zustand persist is the sole data layer.
+• No authentication — single-user app.
+• No CSS framework — custom CSS with design tokens (CSS variables).
+• Currency is hardcoded to INR (Indian Rupees).
+• Custom ringtone upload capped at 500KB (stored as base64 in localStorage).
+• Service Worker is minimal — only handles notification click events.
+• Build output is a static site deployed to GitHub Pages.
+• Circular dependency between ringtoneStore and toastStore avoided via
+  dynamic import() in ringtoneStore.
+
+================================================================================
+                              END OF CONTEXT
+================================================================================

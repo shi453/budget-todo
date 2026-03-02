@@ -1,0 +1,654 @@
+================================================================================
+      BUDGET & TODO TRACKER — BUSINESS REQUIREMENTS DOCUMENT (BRD)
+================================================================================
+Document Version : 1.0
+Date             : March 2, 2026
+Prepared By      : Business Analyst
+Application      : Budget & Todo Tracker
+Live URL         : https://shi453.github.io/budget-todo/
+Repository       : https://github.com/shi453/budget-todo
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+
+  1. Executive Summary
+  2. Business Objectives
+  3. Scope
+  4. User Personas
+  5. Functional Requirements
+     5.1  Budget Tracker Module
+     5.2  Todo List Module
+     5.3  Notification & Reminder System
+     5.4  Data Export/Import
+     5.5  Ringtone & Sound Settings
+     5.6  Theme Management
+     5.7  User Interface & Experience
+  6. Non-Functional Requirements
+  7. Data Requirements
+  8. User Interface Requirements
+  9. Deployment Requirements
+  10. Assumptions & Constraints
+  11. Acceptance Criteria
+  12. Glossary
+
+================================================================================
+1. EXECUTIVE SUMMARY
+================================================================================
+
+The Budget & Todo Tracker is a browser-based Progressive Web Application (PWA)
+designed for personal finance tracking and task management. It provides a
+spreadsheet-style budget tracker with what-if scenario analysis and a
+full-featured todo list with group-based reminders, priority management, and
+inline notes. The application runs entirely client-side with no server
+dependency, storing all data in the browser's local storage.
+
+================================================================================
+2. BUSINESS OBJECTIVES
+================================================================================
+
+BO-01  Provide users with a simple, accessible tool to plan and compare
+       budget scenarios (planned vs. what-if) in a spreadsheet-like interface.
+
+BO-02  Enable users to manage daily tasks with grouping, prioritization,
+       date-based scheduling, and proactive reminders.
+
+BO-03  Eliminate dependency on third-party services — all data stays local
+       to the user's browser for privacy and offline capability.
+
+BO-04  Deliver a production-quality user experience with consistent iconography,
+       responsive design, dark/light theming, and modern UI patterns.
+
+BO-05  Allow data portability via JSON export/import so users can back up,
+       transfer, or share their data.
+
+BO-06  Support installability as a PWA for mobile and desktop use.
+
+================================================================================
+3. SCOPE
+================================================================================
+
+3.1 — In Scope
+  • Budget tracking with multiple sheets, row management, and summary.
+  • Todo management with groups, priorities, dates, times, and notes.
+  • Group-based reminders with PWA notifications and alarm sounds.
+  • Data export/import (JSON) and CSV export for budget.
+  • Custom alarm tone selection (presets + uploaded audio).
+  • Light and dark theme support.
+  • Deployment to GitHub Pages with automated CI/CD.
+  • Single-user, browser-only operation (no authentication, no server).
+
+3.2 — Out of Scope
+  • Multi-user collaboration or sharing.
+  • Server-side storage or database integration.
+  • User authentication and authorization.
+  • Email or SMS notifications.
+  • Recurring/repeating tasks or budget templates.
+  • Calendar integration (Google Calendar, Outlook, etc.).
+  • Mobile native app (iOS/Android) — PWA only.
+
+================================================================================
+4. USER PERSONAS
+================================================================================
+
+Persona 1: Personal Budget Planner
+  - Needs: Track monthly expenses, compare planned budget vs. actual/what-if
+    scenarios, quickly highlight important rows, exclude optional expenses.
+  - Behavior: Creates one sheet per month, uses color coding for categories,
+    exports data for record-keeping.
+
+Persona 2: Task-Oriented Individual
+  - Needs: Organize daily tasks by group (Work, Personal, Shopping, etc.),
+    set reminders for important deadlines, add context via notes.
+  - Behavior: Creates groups for different life areas, sets date+time
+    reminders, snoozes reminders when busy, uses priority to focus.
+
+================================================================================
+5. FUNCTIONAL REQUIREMENTS
+================================================================================
+
+──────────────────────────────────────────────────────────────────────────────
+5.1  BUDGET TRACKER MODULE
+──────────────────────────────────────────────────────────────────────────────
+
+FR-BT-001  Multiple Sheets
+  The system shall support creating, renaming, duplicating, and deleting
+  budget sheets. At least one sheet must always exist.
+
+FR-BT-002  Sheet Navigation
+  The system shall display sheet tabs at the top of the budget view. Clicking
+  a tab shall switch to that sheet. The active sheet shall be visually
+  distinguished.
+
+FR-BT-003  Row Management
+  Each sheet shall contain rows with the following editable fields:
+    a) Expense Details — free-text description
+    b) Budget Planned — numeric value (in INR)
+    c) What-If — numeric value (in INR)
+  Users shall be able to add new rows and delete existing rows.
+
+FR-BT-004  Row Color Highlighting
+  Each row shall support a highlight color: none, red, green, yellow, or
+  orange. A color palette button on each row shall allow selection.
+
+FR-BT-005  Row Exclude/Include Toggle
+  Each row shall have a toggle to exclude it from summary calculations.
+  Excluded rows remain visible but are visually muted and their values are
+  not included in totals.
+
+FR-BT-006  Row Reordering
+  Rows shall be reorderable via drag-and-drop using a grip handle control.
+
+FR-BT-007  Summary Bar
+  The budget view shall display a persistent summary bar showing:
+    a) Total Budget (sum of Budget Planned for included rows) — in green
+    b) What-If Total (sum of What-If for included rows) — in orange
+    c) Difference (Total Budget − What-If Total) — in pink
+    d) Item Count (number of included rows, with excluded count shown)
+  All monetary values shall be formatted in INR (₹).
+
+FR-BT-008  Search/Filter
+  The budget view shall include a search bar that filters rows by matching
+  the Expense Details field (case-insensitive substring match).
+
+FR-BT-009  CSV Export
+  Users shall be able to export the current sheet as a CSV file with columns:
+  Row #, Expense Details, Budget Planned (Rs), What-If (Rs), plus a totals row.
+
+FR-BT-010  Inline Cell Editing
+  Clicking a cell in the spreadsheet grid shall activate inline editing.
+  Pressing Enter or clicking outside shall commit the change.
+
+──────────────────────────────────────────────────────────────────────────────
+5.2  TODO LIST MODULE
+──────────────────────────────────────────────────────────────────────────────
+
+FR-TD-001  Task Creation
+  Users shall be able to create tasks with the following fields:
+    a) Title — required, free-text
+    b) Group — dropdown selection from existing groups
+    c) Date — optional date picker (YYYY-MM-DD)
+    d) Time — optional time picker (HH:MM)
+    e) Priority — required, one of: High, Medium, Low
+    f) Notes — optional, free-text (editable inline after creation)
+
+FR-TD-002  Task Editing
+  Users shall be able to edit all task fields after creation via the same
+  form used for creation.
+
+FR-TD-003  Task Completion
+  Users shall be able to toggle a task's completed status via a checkbox.
+  Completed tasks shall be visually distinguished (strikethrough, muted).
+
+FR-TD-004  Task Deletion
+  Users shall be able to delete individual tasks. Deletion shall be confirmed
+  via a custom confirm dialog.
+
+FR-TD-005  Task Grouping
+  Tasks shall be organized into groups. A default "General" group shall
+  always exist and cannot be deleted. Users shall be able to:
+    a) Create new groups
+    b) Delete groups (tasks reassigned to "General")
+  Each group is displayed as a collapsible card.
+
+FR-TD-006  Group Collapsing
+  Each group card shall have a toggle to collapse/expand its task list.
+  Collapsed groups show only the group header.
+
+FR-TD-007  Task Filtering
+  The todo view shall support filtering by:
+    a) Group — "All" or a specific group
+    b) Status — "All", "Active" (incomplete), "Completed"
+    c) Search — text search matching task titles (case-insensitive)
+
+FR-TD-008  Task Sorting
+  Tasks within each group shall be sorted by:
+    1. Date (earliest first, no-date tasks last)
+    2. Priority (high → medium → low)
+    3. Creation timestamp (newest first)
+
+FR-TD-009  Task Notes — Inline Editor
+  Each task shall have an inline notes panel with:
+    a) A toggle button always visible on the task card.
+    b) The toggle indicates whether notes exist (highlighted when present).
+    c) Clicking the toggle expands/collapses the notes panel.
+    d) The panel shows existing notes as read-only text.
+    e) Clicking the text enters edit mode with an auto-resizing textarea.
+    f) Ctrl+Enter saves the note; Cancel or Escape discards changes.
+    g) A pencil icon hint appears on hover over the read-only display.
+    h) Placeholder text "Click to add a note..." shown when notes are empty.
+
+FR-TD-010  Task Date Labels
+  Tasks shall display contextual date labels:
+    - "Today" for today's date
+    - "Tomorrow" for tomorrow's date
+    - "Overdue" for past dates (with visual warning)
+    - Standard formatted date for other dates
+    - "No Date" if no date is set
+
+──────────────────────────────────────────────────────────────────────────────
+5.3  NOTIFICATION & REMINDER SYSTEM
+──────────────────────────────────────────────────────────────────────────────
+
+FR-NR-001  Group Reminders
+  Each group shall support an optional reminder with:
+    a) Enable/disable toggle
+    b) Date picker (specific date for reminder)
+    c) Time picker (specific time on that date)
+
+FR-NR-002  Permission Request
+  When a user enables a reminder for the first time, the system shall request
+  notification permission from the browser. If denied, a warning toast
+  shall be shown.
+
+FR-NR-003  Reminder Firing
+  The system shall check every 30 seconds whether any group's reminder
+  date+time has been reached. When fired:
+    a) Show a PWA notification listing up to 5 pending tasks in the group.
+    b) Play the selected alarm tone.
+    c) Only fire within a 5-minute window to prevent re-firing on old reminders.
+
+FR-NR-004  Snooze
+  When a reminder fires, the user shall be able to snooze it for:
+  15 minutes, 30 minutes, 1 hour, 2 hours, 3 hours, 4 hours, or 5 hours.
+  After the snooze period expires, the reminder fires again.
+
+FR-NR-005  Dismiss
+  Users shall be able to permanently dismiss a fired reminder. A dismissed
+  reminder will not fire again until the user changes its date/time.
+
+FR-NR-006  Notification Click
+  Clicking a notification shall focus the app window or open a new one
+  if the app is not already open.
+
+FR-NR-007  Empty Group Skip
+  Reminders shall not fire for groups with zero pending (incomplete) tasks.
+
+──────────────────────────────────────────────────────────────────────────────
+5.4  DATA EXPORT/IMPORT
+──────────────────────────────────────────────────────────────────────────────
+
+FR-EI-001  Export Modes
+  The system shall support three export modes:
+    a) Budget Only — exports all budget sheets
+    b) Todo Only — exports all tasks, groups, and group reminders
+    c) Full Export — exports both budget and todo data
+
+FR-EI-002  Export Format
+  Exported files shall be JSON with:
+    - Version number (v1)
+    - Type identifier ('budget', 'todo', or 'full')
+    - Timestamp (exportedAt)
+    - Data payload with all IDs stripped
+
+FR-EI-003  ID Stripping on Export
+  All internal IDs shall be removed from exported data. Only the meaningful
+  data fields are preserved.
+
+FR-EI-004  ID Generation on Import
+  When importing, the system shall generate fresh unique IDs for all
+  imported items (sheets, rows, tasks).
+
+FR-EI-005  Merge-Based Import
+  Importing shall ADD data alongside existing data, not replace it:
+    a) Budget: Imported sheets are added as new sheets.
+    b) Todo: Imported tasks are appended. Groups are deduplicated.
+       Reminder settings for existing groups are preserved; imported
+       reminder settings apply only to newly created groups.
+
+FR-EI-006  Import Confirmation
+  Before processing an import, the system shall display a confirm dialog
+  explaining that data will be added to existing data.
+
+FR-EI-007  Import Feedback
+  Upon successful import, a success toast shall be shown indicating
+  the number of items imported. On failure, an error toast shall be shown.
+
+FR-EI-008  File Validation
+  The system shall validate imported JSON files for:
+    - Valid JSON syntax
+    - Correct version number
+    - Correct type identifier
+    - Required data structure
+
+──────────────────────────────────────────────────────────────────────────────
+5.5  RINGTONE & SOUND SETTINGS
+──────────────────────────────────────────────────────────────────────────────
+
+FR-RS-001  Ringtone Settings Modal
+  The navbar shall include a button to open a ringtone settings modal.
+
+FR-RS-002  Preset Tones
+  The system shall provide 5 built-in alarm tones generated via Web Audio API:
+    a) Classic Beeps — three short 800Hz sine beeps
+    b) Gentle Chime — ascending C5-E5-G5 sine sweep
+    c) Urgent Alarm — rapid 880Hz sawtooth oscillation
+    d) Wind Chime — staggered multi-frequency sine tones
+    e) Soft Pulse — gentle 440Hz sine with tremolo
+
+FR-RS-003  Preview
+  Each preset tone shall have a play/preview button so users can hear
+  the sound before selecting it.
+
+FR-RS-004  Custom Upload
+  Users shall be able to upload a custom audio file as their alarm tone.
+    a) Accepted: any audio file the browser can play
+    b) Maximum size: 500KB
+    c) Storage: base64 data URL in localStorage
+    d) Filename displayed for reference
+
+FR-RS-005  Custom Tone Management
+  Users shall be able to switch between custom and preset tones, and
+  delete (clear) the uploaded custom tone.
+
+──────────────────────────────────────────────────────────────────────────────
+5.6  THEME MANAGEMENT
+──────────────────────────────────────────────────────────────────────────────
+
+FR-TH-001  Light/Dark Toggle
+  The navbar shall include a toggle button to switch between light and
+  dark themes.
+
+FR-TH-002  Theme Persistence
+  The selected theme shall persist across browser sessions via localStorage.
+
+FR-TH-003  Theme Application
+  The theme shall be applied via a `data-theme` attribute on the HTML root
+  element, controlling CSS custom properties for all colors.
+
+──────────────────────────────────────────────────────────────────────────────
+5.7  USER INTERFACE & EXPERIENCE
+──────────────────────────────────────────────────────────────────────────────
+
+FR-UI-001  Navigation
+  The app shall have a fixed top navbar with:
+    a) Application name and icon
+    b) Tab buttons for Budget and Todo views
+    c) Ringtone settings button
+    d) Theme toggle button
+
+FR-UI-002  Icon Library
+  All icons throughout the application shall use Lucide React for consistent
+  rendering across platforms and browsers.
+
+FR-UI-003  Toast Notifications
+  The system shall display non-blocking toast notifications for:
+    a) Success messages (auto-dismiss: 3.5 seconds)
+    b) Error messages (auto-dismiss: 5 seconds)
+    c) Warning messages (auto-dismiss: 4 seconds)
+    d) Info messages (auto-dismiss: 3.5 seconds)
+  Toasts shall appear at the bottom-right corner with a slide-in animation.
+
+FR-UI-004  Confirm Dialogs
+  All destructive or significant actions shall use a custom modal confirm
+  dialog instead of the native browser confirm(). The dialog shall support
+  'danger' (red) and 'primary' (accent) button variants.
+
+FR-UI-005  Modal Backdrop
+  All modal overlays shall include a backdrop blur effect and semi-transparent
+  background.
+
+FR-UI-006  Currency Formatting
+  All monetary values shall be formatted in Indian Rupees (INR) using the
+  en-IN locale with the ₹ symbol.
+
+FR-UI-007  Date & Time Formatting
+  Dates shall be displayed in en-IN format (DD Mon YYYY).
+  Times shall be displayed in 12-hour format (H:MM AM/PM).
+
+FR-UI-008  Priority Indicators
+  Task priority shall be indicated by colored dots:
+    - High: Red dot (●)
+    - Medium: Yellow/amber dot (●)
+    - Low: Green dot (●)
+
+================================================================================
+6. NON-FUNCTIONAL REQUIREMENTS
+================================================================================
+
+NFR-001  Performance
+  The application shall load within 3 seconds on a standard broadband
+  connection. The production bundle shall not exceed 300KB gzipped.
+
+NFR-002  Browser Compatibility
+  The application shall function correctly in the latest versions of:
+  Chrome, Firefox, Edge, and Safari.
+
+NFR-003  Responsive Design
+  The application shall be usable on screen widths from 320px (mobile)
+  to 1920px (desktop) with appropriate layout adjustments.
+
+NFR-004  Offline Capability
+  The application shall function offline for all features except initial
+  load and PWA notifications. All data is stored locally.
+
+NFR-005  Data Privacy
+  No user data shall leave the browser. All persistence is via localStorage.
+  No analytics, tracking, or third-party data collection.
+
+NFR-006  Accessibility
+  Interactive elements shall have appropriate aria-labels. Color shall not be
+  the sole means of conveying information. Focus management for modals.
+
+NFR-007  Installability
+  The application shall be installable as a PWA on supported platforms
+  via the browser's "Add to Home Screen" or "Install" prompt.
+
+NFR-008  Build & Deploy Automation
+  The CI/CD pipeline shall automatically build and deploy on every push to
+  the main branch with zero manual intervention.
+
+NFR-009  Code Quality
+  The codebase shall pass TypeScript strict-mode compilation with no errors.
+
+================================================================================
+7. DATA REQUIREMENTS
+================================================================================
+
+DR-001  Storage Mechanism
+  All application data shall be stored in the browser's localStorage via
+  Zustand persist middleware with the following named keys:
+    - "budget-storage"
+    - "todo-storage"
+    - "theme-storage"
+    - "ringtone-storage"
+
+DR-002  Data Durability
+  Data persists as long as the user does not clear browser storage. The app
+  provides JSON export for manual backup.
+
+DR-003  Data Limits
+  localStorage is typically limited to ~5-10MB per origin. Custom ringtone
+  uploads are capped at 500KB to conserve storage space.
+
+DR-004  Data Migration
+  The export format includes a version number (v1) to support future
+  migrations if the data schema evolves.
+
+================================================================================
+8. USER INTERFACE REQUIREMENTS
+================================================================================
+
+UIR-001  Color Scheme (Light Mode)
+  Background: #ffffff (primary), #f8fafc (secondary), #f1f5f9 (tertiary)
+  Text: #0f172a (primary), #64748b (secondary)
+  Accent: #4f46e5 (indigo)
+  Summary colors: Budget=#16a34a (green), What-If=#ea580c (orange),
+                  Difference=#db2777 (pink)
+
+UIR-002  Color Scheme (Dark Mode)
+  Background: #0f172a (primary), #1e293b (secondary), #334155 (tertiary)
+  Text: #f1f5f9 (primary), #94a3b8 (secondary)
+  Accent: #818cf8 (indigo light)
+  Summary colors: Budget=#4ade80 (green), What-If=#fb923c (orange),
+                  Difference=#f472b6 (pink)
+
+UIR-003  Typography
+  Font Family: system-ui, -apple-system, sans-serif
+  Base size: responsive (typically 14-16px)
+
+UIR-004  Spacing & Layout
+  Border radius tokens: sm (6px), md (8px), lg (12px)
+  Container max-width with padding
+  Consistent gap and padding across components
+
+UIR-005  Animations
+  Toast slide-in animation
+  Notes panel slide-down animation
+  Smooth transitions (150-200ms) on hover, focus, and state changes
+
+================================================================================
+9. DEPLOYMENT REQUIREMENTS
+================================================================================
+
+DEP-001  Hosting Platform
+  GitHub Pages, served from the gh-pages branch.
+
+DEP-002  Base URL
+  All assets shall be served from the /budget-todo/ path prefix.
+
+DEP-003  CI/CD Pipeline
+  GitHub Actions workflow triggered on push to main:
+    1. Checkout code
+    2. Setup Node.js 20 with npm cache
+    3. npm ci (clean install)
+    4. npm run build (TypeScript compilation + Vite production build)
+    5. Deploy dist/ to gh-pages branch
+
+DEP-004  Build Output
+  Static files (HTML, CSS, JS) in the dist/ directory.
+  Single index.html with hashed asset filenames for cache busting.
+
+================================================================================
+10. ASSUMPTIONS & CONSTRAINTS
+================================================================================
+
+A-01   The application is designed for single-user use. There is no concept
+       of user accounts, sessions, or shared access.
+
+A-02   Users are expected to export their data periodically for backup.
+       There is no automatic cloud backup.
+
+A-03   Notification support depends on the browser granting permission.
+       If denied, reminders will not trigger visible/audible alerts.
+
+A-04   Custom audio uploads are limited to 500KB due to localStorage size
+       constraints.
+
+A-05   The currency (INR) and date locale (en-IN) are hardcoded. No
+       localization or internationalization is currently supported.
+
+A-06   The app requires a modern browser with ES2020+ support, Web Audio API,
+       and Service Worker capability for full functionality.
+
+C-01   No server-side components or APIs. All logic runs client-side.
+
+C-02   localStorage size is limited by the browser (typically 5-10MB per origin).
+
+C-03   Service Worker scope is limited to the /budget-todo/ path.
+
+================================================================================
+11. ACCEPTANCE CRITERIA
+================================================================================
+
+── Budget Tracker ──
+
+AC-BT-01  User can create a new budget sheet, add rows with expense details
+          and amounts, and see the summary bar update in real time.
+
+AC-BT-02  User can highlight rows with colors and the color persists after
+          page reload.
+
+AC-BT-03  User can exclude a row from totals and see the summary recalculate
+          immediately, showing the excluded count.
+
+AC-BT-04  User can reorder rows via drag-and-drop and the order persists.
+
+AC-BT-05  User can duplicate a sheet and see all rows copied to a new sheet
+          with an independent name.
+
+AC-BT-06  User can export a sheet to CSV and open it in a spreadsheet app.
+
+AC-BT-07  Summary values display in correct colors: green (budget), orange
+          (what-if), pink (difference).
+
+── Todo List ──
+
+AC-TD-01  User can create a task with title, group, date, time, and priority,
+          and it appears in the correct group's card.
+
+AC-TD-02  User can mark a task complete/incomplete and see visual feedback.
+
+AC-TD-03  User can create and delete groups. Deleting a group moves its
+          tasks to "General". The "General" group cannot be deleted.
+
+AC-TD-04  User can collapse and expand group cards.
+
+AC-TD-05  User can filter tasks by group, status, and search text simultaneously.
+
+AC-TD-06  User can add/edit notes on a task via the inline notes panel.
+          Notes persist after closing and reopening the panel.
+
+AC-TD-07  Overdue tasks display a visual warning indicator.
+
+── Reminders ──
+
+AC-NR-01  User can set a reminder for a group with date and time. When the
+          time arrives, a notification appears and an alarm sound plays.
+
+AC-NR-02  User can snooze a reminder and it fires again after the selected
+          snooze duration.
+
+AC-NR-03  User can dismiss a reminder and it does not fire again.
+
+AC-NR-04  Reminder does not fire if the group has no pending tasks.
+
+── Export/Import ──
+
+AC-EI-01  User can export all data as JSON. The file contains no internal IDs.
+
+AC-EI-02  User can import a JSON file and see data added alongside existing
+          data (not replaced).
+
+AC-EI-03  Invalid JSON files show an error toast. Valid imports show a
+          success toast with count.
+
+── Theme & Settings ──
+
+AC-TS-01  User can toggle dark/light mode and the preference persists.
+
+AC-TS-02  User can select a preset alarm tone, preview it, and hear it when
+          a reminder fires.
+
+AC-TS-03  User can upload a custom alarm tone (under 500KB) and use it.
+
+── General UI ──
+
+AC-UI-01  No native browser alert() or confirm() dialogs appear during normal
+          usage. All feedback uses toast notifications or custom modals.
+
+AC-UI-02  All icons render consistently across Chrome, Firefox, Edge, Safari.
+
+AC-UI-03  The app is installable as a PWA from the browser.
+
+================================================================================
+12. GLOSSARY
+================================================================================
+
+Term              Definition
+────              ──────────
+PWA               Progressive Web Application — a web app that can be installed
+                  on a device and supports offline features.
+Zustand           Lightweight state management library for React.
+localStorage      Browser API for storing key-value data persistently.
+Lucide React      Open-source icon library with React components.
+Web Audio API     Browser API for generating and processing audio.
+Service Worker    Background script that enables PWA notifications.
+What-If           Alternative budget scenario column for comparison.
+Toast             Non-blocking notification banner shown temporarily.
+Snooze            Postpone a reminder for a specified duration.
+Dismiss           Permanently silence a reminder until reconfigured.
+
+================================================================================
+                        END OF REQUIREMENTS DOCUMENT
+================================================================================
